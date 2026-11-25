@@ -1,7 +1,7 @@
 ShowTaskBar=1
 TaskBarAtTop=0
 TaskBarAutoHide=0
-TaskBarShowStartMenu=1
+TaskBarShowStartMenu=0
 TaskBarShowWindowListMenu=0
 TaskBarShowWorkspaces=0
 TaskBarShowMailboxStatus=0
@@ -22,7 +22,7 @@ ShowHelp=0
 ShowLogoutMenu=0
 ShowRun=0
 MenuMouseTracking=1
-KeySysMenu="Super_L"
+KeySysMenu=""
 ShutdownCommand="sudo -n systemctl poweroff"
 RebootCommand="sudo -n systemctl reboot"
 TerminalCommand="xterm"

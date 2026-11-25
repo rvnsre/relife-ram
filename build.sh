@@ -34,6 +34,11 @@ xterm
 pcmanfm
 fonts-dejavu-core
 network-manager
+network-manager-config-connectivity-debian
+polkitd
+firmware-realtek
+firmware-iwlwifi
+firmware-atheros
 wpasupplicant
 iproute2
 ca-certificates
@@ -47,6 +52,7 @@ bc
 xpdf
 xdg-utils
 xdotool
+wmctrl
 python3
 python3-tk
 curl
@@ -55,7 +61,8 @@ PKG
 if [ "$edition" = education ]; then
   cat >> config/package-lists/relife.list.chroot <<'PKG'
 pavucontrol
-network-manager-gnome
+firmware-mediatek
+firmware-brcm80211
 PKG
 fi
 # The live medium already ships these under /live. Leave the build chroot
@@ -104,8 +111,6 @@ bash ../../scripts/build-touchegg.sh config/includes.chroot
 mkdir -p config/includes.chroot/etc/systemd/system/multi-user.target.wants
 ln -sf ../touchegg.service config/includes.chroot/etc/systemd/system/multi-user.target.wants/touchegg.service
 if [ "$edition" = extreme-lite ]; then
-  skel=config/includes.chroot/etc/skel
-  sed -i -e 's/nm-connection-editor/xterm -T Wi-Fi -e nmtui-connect/' "$skel/.icewm/"{menu,toolbar}
   cat > config/hooks/live/0910-locales.hook.chroot <<'LOCALES'
 #!/bin/sh
 set -eu

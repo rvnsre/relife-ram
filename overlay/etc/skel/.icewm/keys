@@ -1,3 +1,6 @@
+key "Super_L" relife-desktop start
+key "Ctrl+Escape" relife-desktop start
+key "Super+Tab" relife-desktop switch
 key "Super+e" pcmanfm
 key "Super+b" relife-firefox
 key "XF86AudioRaiseVolume" relife-volume up

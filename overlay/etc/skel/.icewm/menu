@@ -4,7 +4,7 @@ prog "Fayllarımı aç" /usr/share/icons/relife/files.xpm pcmanfm
 prog "Mətn yaz" /usr/share/icons/relife/write.xpm mousepad
 separator
 menu "Parametrlər" /usr/share/icons/relife/network.xpm {
-    prog "Wi-Fi şəbəkəsinə qoşul" /usr/share/icons/relife/network.xpm nm-connection-editor
+    prog "Wi-Fi şəbəkəsinə qoşul" /usr/share/icons/relife/network.xpm relife-desktop network
     prog "Səsi dəyiş" /usr/share/icons/relife/sound.xpm relife-sound
 }
 prog "Kömək" /usr/share/icons/relife/help.xpm relife-help

@@ -1,6 +1,7 @@
 """Actual ISO boot, desktop/browser RAM samples, screenshots and ACPI shutdown."""
 import argparse
 import base64
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
 import os
 from pathlib import Path
@@ -51,6 +52,12 @@ findmnt -n -o FSTYPE,OPTIONS /run/live/medium | grep -Eq '^tmpfs[[:space:]]+ro(,
 awk '/MemTotal:/{t=$2} /MemFree:/{f=$2} /MemAvailable:/{a=$2} END {printf "IDLE_RAW_BYTES=%.0f\nIDLE_AVAILABLE_BYTES=%.0f\n",(t-f)*1024,(t-a)*1024}' /proc/meminfo
 echo RELIFE_IDLE_END
 sleep 5
+if curl --noproxy '*' -fsS --max-time 10 http://10.0.2.2:RELIFE_TEST_PORT/ | grep -Fxq relife-network-ok; then
+  echo RELIFE_NETWORK_OK
+else
+  nmcli device status
+  ip route
+fi
 as_student() { runuser -u student -- env HOME=/home/student DISPLAY=:0 XAUTHORITY=/home/student/.Xauthority "$@"; }
 as_student pcmanfm --profile ReLife /home/student/Desktop/help.desktop >/tmp/relife-education.log 2>&1 &
 for n in $(seq 1 20); do
@@ -68,6 +75,23 @@ as_student pcmanfm --profile ReLife /home/student >/tmp/relife-files.log 2>&1 &
 sleep 3
 echo RELIFE_FILES_END
 sleep 4
+as_student relife-desktop switch right >/tmp/relife-switcher.log 2>&1 &
+for n in $(seq 1 10); do
+  switch_window=$(as_student xdotool search --onlyvisible --class '^RelifeSwitcher$' | head -1)
+  [ -z "$switch_window" ] || break
+  sleep 1
+done
+if [ -n "$switch_window" ]; then
+  echo RELIFE_SWITCHER_END
+  sleep 4
+  as_student xdotool windowactivate --sync "$switch_window"
+  as_student xdotool key Return
+  sleep 2
+  current=$(as_student xdotool getactivewindow getwindowname)
+  case "$current" in student|ReLife*) echo RELIFE_SWITCHER_OK ;; esac
+else
+  cat /tmp/relife-switcher.log
+fi
 if command -v firefox-esr >/dev/null; then
 as_student relife-firefox file:///usr/share/relife/start.html >/tmp/relife-browser.log 2>&1 &
 sleep 30
@@ -78,11 +102,13 @@ awk '/MemTotal:/{t=$2} /MemFree:/{f=$2} /MemAvailable:/{a=$2} END {printf "BROWS
 echo RELIFE_BROWSER_END
 sleep 5
 fi
-# Open the actual Start menu and choose its bottom item (Kompüteri söndür).
+# Open the new taskbar Start panel and use its power action.
 height=$(as_student xdotool getdisplaygeometry | awk '{print $2}')
-as_student xdotool mousemove 48 "$((height - 18))" click 1
+as_student xdotool mousemove 15 "$((height - 17))" click 1
+sleep 3
+echo RELIFE_START_END
 sleep 2
-as_student xdotool mousemove 82 "$((height - 54))" click 1
+as_student xdotool key alt+p
 for n in $(seq 1 15); do
   power_window=$(as_student xdotool search --onlyvisible --class '^RelifePower$' | head -1)
   [ -z "$power_window" ] || break
@@ -118,17 +144,26 @@ def screenshot(sock_path, target):
     except Exception as error:
         print(f'screenshot: {error}', flush=True)
 
+class NetworkProbe(BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.end_headers()
+        self.wfile.write(b"relife-network-ok\n")
+
+
 def boot(mode):
     log_path = OUT / f'qemu-{mode}.log'
     qmp = Path(f'/tmp/relife-{os.getpid()}-{mode}.sock')
     cmd = ['qemu-system-x86_64', '-m', str(args.ram), '-smp', '2', '-accel', 'tcg',
            *MEDIA, '-display', 'none', '-monitor', 'none',
-           '-nic', 'none', '-serial', 'stdio', '-no-reboot', '-qmp', f'unix:{qmp},server=on,wait=off']
+           '-nic', 'user,model=e1000', '-serial', 'stdio', '-no-reboot', '-qmp', f'unix:{qmp},server=on,wait=off']
     if mode in ("uefi", "uefi-fat32"):
         variables = OUT / 'OVMF_VARS.fd'
         shutil.copy(args.ovmf_dir / 'OVMF_VARS_4M.fd', variables)
         cmd += ['-machine', 'q35', '-drive', f'if=pflash,format=raw,readonly=on,file={args.ovmf_dir / "OVMF_CODE_4M.fd"}',
                 '-drive', f'if=pflash,format=raw,file={variables}']
+    server = ThreadingHTTPServer(("127.0.0.1", 0), NetworkProbe)
+    threading.Thread(target=server.serve_forever, daemon=True).start()
     proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     received = bytearray()
     def read():
@@ -143,7 +178,7 @@ def boot(mode):
     reader = threading.Thread(target=read, daemon=True)
     reader.start()
     stage = 0
-    seen_idle = seen_browser = seen_education = seen_files = False
+    seen_idle = seen_browser = seen_education = seen_files = seen_start = seen_switch = False
     deadline = time.monotonic() + 420
     heartbeat = time.monotonic()
     try:
@@ -154,7 +189,8 @@ def boot(mode):
             elif stage == 1 and 'Password:' in text:
                 proc.stdin.write(b'live\n'); proc.stdin.flush(); stage = 2
             elif stage == 2 and 'student@relife:' in text:
-                encoded = base64.b64encode(GUEST.encode()).decode()
+                guest = GUEST.replace("RELIFE_TEST_PORT", str(server.server_port))
+                encoded = base64.b64encode(guest.encode()).decode()
                 for offset in range(0, len(encoded), 700):
                     redirect = ">" if offset == 0 else ">>"
                     chunk = encoded[offset:offset + 700]
@@ -169,6 +205,12 @@ def boot(mode):
             if not seen_files and 'RELIFE_FILES_END' in text:
                 screenshot(qmp, OUT / f'{mode}-files.ppm')
                 seen_files = True
+            if not seen_start and 'RELIFE_START_END' in text:
+                screenshot(qmp, OUT / f'{mode}-start.ppm')
+                seen_start = True
+            if not seen_switch and 'RELIFE_SWITCHER_END' in text:
+                screenshot(qmp, OUT / f'{mode}-switcher.ppm')
+                seen_switch = True
             if not seen_browser and 'RELIFE_BROWSER_END' in text:
                 screenshot(qmp, OUT / f'{mode}-firefox.ppm'); seen_browser = True
             if time.monotonic() - heartbeat >= 30:
@@ -181,6 +223,8 @@ def boot(mode):
         code = proc.wait()
         reader.join(timeout=5)
         qmp.unlink(missing_ok=True)
+        server.shutdown()
+        server.server_close()
     text = received.decode(errors='replace')
     metrics = {k: int(v) for k, v in re.findall(r'(IDLE_RAW_BYTES|IDLE_AVAILABLE_BYTES|BROWSER_RAW_BYTES|BROWSER_AVAILABLE_BYTES)=(\d+)', text)}
     cpu_ticks = [tuple(map(int, line.split(","))) for line in
@@ -191,6 +235,7 @@ def boot(mode):
         if sum(delta):
             cpu_usage.append(round(100 * (1 - (delta[3] + delta[4]) / sum(delta)), 2))
     result = {'mode': mode, 'idle_cpu_samples_percent': cpu_usage, 'desktop': seen_idle, 'gesture_services': 'RELIFE_GESTURES_OK' in text, 'firefox': 'RELIFE_BROWSER_OK' in text,
+              'network': 'RELIFE_NETWORK_OK' in text, 'switcher': 'RELIFE_SWITCHER_OK' in text,
               'education': bool(re.search(r'^RELIFE_EDUCATION_OK\r?$', text, re.M)),
               'toram': 'RELIFE_TORAM_OK' in text, 'no_swap': 'RELIFE_SWAP_OK' in text,
               'shutdown': code == 0 and 'RELIFE_SHUTDOWN_REQUEST' in text, 'memory': metrics}
@@ -203,9 +248,7 @@ def boot(mode):
 results = [boot("uefi-fat32")] if args.disk else [boot("bios"), boot("uefi")]
 report = "VALIDATION-WINDOWS-UEFI.json" if args.disk else "VALIDATION.json"
 (OUT / report).write_text(json.dumps({'edition': args.edition, 'ram_mib': args.ram, 'hard_disks': int(bool(args.disk)), 'results': results,
-    'limitations': ['Physical touchpad gestures require hardware validation.', 'No real-hardware shutdown, network browsing, media removal or pressure test.']}, indent=2))
+    'limitations': ['Physical touchpad gestures require hardware validation.', 'Networking test checks DHCP and local HTTP through QEMU; physical Wi-Fi, captive portals and public internet are separate.']}, indent=2))
 required = ["desktop", "education", "toram", "no_swap", "shutdown"]
-required += ["firefox", "gesture_services"]
-if args.edition == "extreme-lite":
-    required += ["idle_700mb_available"]
+required += ["firefox", "gesture_services", "network", "switcher"]
 raise SystemExit(0 if all(all(result[key] for key in required) for result in results) else 1)

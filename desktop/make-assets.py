@@ -20,6 +20,15 @@ def icon_pixel(kind, x, y):
         return " "
     if min(x - 2, 29 - x) + min(y - 2, 29 - y) < 4:
         return " "
+    if kind == "start":
+        return "w" if (8 <= x <= 22 and y in (9, 15, 21)) or (8 <= x <= 10 and 9 <= y <= 21) else "."
+    if kind == "windows":
+        return "w" if ((8 <= x <= 20 and 9 <= y <= 19 and (x in (8, 20) or y in (9, 19)))
+                       or (12 <= x <= 24 and 13 <= y <= 23 and (x == 24 or y == 23))) else "."
+    if kind == "network":
+        radius = (x - 16)**2 + (y - 22)**2
+        return "w" if ((y < 22 and (35 <= radius <= 63 or 102 <= radius <= 150))
+                       or (14 <= x <= 17 and 21 <= y <= 24)) else "."
     if kind == "education":
         return "w" if (8 <= x <= 14 or 17 <= x <= 23) and (10 <= y <= 21 or (y == 22 and x in (14, 17))) else "."
     if kind == "files":
@@ -30,7 +39,7 @@ def icon_pixel(kind, x, y):
         return "w" if 8 <= x <= 23 and 8 <= y <= 24 else "."
     if kind == "help":
         return "w" if (14 <= x <= 17 and y in range(15, 21)) or (14 <= x <= 17 and 9 <= y <= 11) else "."
-    if kind in ("internet", "network"):
+    if kind == "internet":
         if 40 <= (x - 16)**2 + (y - 16)**2 <= 77:
             return "w"
         return "w" if (x in (15, 16, 17) and 8 <= y <= 24) or (y in (15, 16) and 8 <= x <= 24) else "."
@@ -45,12 +54,12 @@ def icon_pixel(kind, x, y):
 
 def wallpaper(path):
     width, height = 960, 600
-    colors = ((12, 25, 43), (15, 37, 58), (22, 57, 77), (25, 76, 92), (34, 102, 111))
+    colors = ((19, 37, 62), (30, 65, 103), (37, 85, 125), (45, 109, 146), (53, 132, 161))
     rows = []
     for y in range(height):
         row = bytearray([0])
         for x in range(width):
-            u, v = (x - 758) / 565, (y - 576) / 415
+            u, v = (x - 780) / 565, (y - 480) / 440
             field = math.hypot(u + .30 * v, v) + .17 * math.sin(u * 3.8 - v * 2.5)
             band = sum(field < bound for bound in (1.02, .81, .61, .41))
             light = round(5 * x / width + 3 * (1 - y / height))
@@ -132,16 +141,16 @@ def main():
     dest = parser.parse_args().overlay / "usr/share"
     wallpaper(dest / "relife/desktop.png")
     theme_assets(dest / "icewm/themes/ReLife")
-    colors = {"education": "#256D66", "files": "#A75B18", "write": "#3F5986",
+    colors = {"start":"#235A78", "windows":"#436582", "education": "#256D66", "files": "#A75B18", "write": "#3F5986",
               "help": "#555488", "internet": "#275E83", "network": "#275E83",
               "sound": "#3A5F76", "power": "#743E58"}
     for name, color in colors.items():
         xpm(dest / f"icons/relife/{name}.xpm", 32, 32, {" ": "None", ".": color, "w": "#FFFFFF"},
             lambda x, y: icon_pixel(name, x, y))
-    glyphs = {" ": b"\0\0\0\0", "w": b"\xff" * 4, ".": bytes.fromhex("256d66ff")}
-    rgba = b"".join(b"\0" + b"".join(glyphs[icon_pixel("education", x, y)] for x in range(32))
-                    for y in range(32))
-    png(dest / "icons/relife/education.png", 32, 32, 6, rgba)
+        glyphs = {" ": b"\0" * 4, "w": b"\xff" * 4, ".": bytes.fromhex(color[1:] + "ff")}
+        rgba = b"".join(b"\0" + b"".join(glyphs[icon_pixel(name, x, y)] for x in range(32))
+                        for y in range(32))
+        png(dest / f"icons/relife/{name}.png", 32, 32, 6, rgba)
 
 
 if __name__ == "__main__":
