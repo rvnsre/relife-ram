@@ -5,7 +5,7 @@ cd "$(dirname "$0")"
 mkdir -p build
 cd build
 lb clean --purge || true
-lb config --mode debian --distribution trixie --architectures amd64 --binary-image iso-hybrid --bootloaders "syslinux grub-efi" --apt-indices false --archive-areas 'main contrib non-free-firmware' --apt-recommends false --debian-installer none --memtest none --bootappend-live 'boot=live components toram=filesystem.squashfs nopersistence swap=false username=student hostname=relife console=tty0 console=ttyS0,115200n8' --chroot-squashfs-compression-type xz --iso-volume RELIFE_RAM
+lb config --mode debian --distribution trixie --architectures amd64 --binary-image iso-hybrid --bootloaders "syslinux grub-efi" --apt-indices false --debootstrap-options "--variant=minbase" --archive-areas 'main contrib non-free-firmware' --apt-recommends false --debian-installer none --memtest none --bootappend-live 'boot=live components toram=filesystem.squashfs nopersistence swap=false username=student hostname=relife console=tty0 console=ttyS0,115200n8' --chroot-squashfs-compression-type xz --iso-volume RELIFE_RAM
 mkdir -p config/package-lists config/includes.chroot/etc/systemd/journald.conf.d config/includes.chroot/etc/skel config/includes.chroot/usr/local/bin config/hooks/live
 cat > config/package-lists/relife.list.chroot <<'PKG'
 live-boot
@@ -89,6 +89,17 @@ echo RELIFE_REPORT_END
 systemctl poweroff
 PROBE
 chmod +x config/includes.chroot/usr/local/bin/relife-probe
+cat > config/hooks/live/0900-trim.hook.chroot <<'TRIM'
+#!/bin/sh
+set -eu
+printf '\nPre-trim disk usage:\n'
+du -x -h -d 2 /usr /var | sort -h | tail -35
+apt-get clean
+rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/* /usr/share/doc/* /usr/share/man/* /usr/share/locale/*
+printf '\nPost-trim disk usage:\n'
+du -x -h -d 2 /usr /var | sort -h | tail -35
+TRIM
+chmod +x config/hooks/live/0900-trim.hook.chroot
 lb build
 mkdir -p ../dist
 cp live-image-amd64.hybrid.iso ../dist/relife-ram-v0.1.0-amd64.iso
