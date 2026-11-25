@@ -4,8 +4,13 @@ volume controls use matching native widgets. Built-in desktop shortcuts point
 to the installed applications and can open directly in PCManFM.
 
 ReLife RAM v0.3.0 Alpha 2 provides two amd64 live images. Extreme Lite runs the
-offline Education Center without a browser. Education adds Firefox ESR and
-confirmed links to ChatGPT, Claude and Gemini.
+offline Education Center and Firefox ESR with an automatic CPU/RAM profile.
+Education also includes graphical network and sound settings.
+
+This build presents a simpler Start menu with Dərs oxu, İnternetə gir,
+Fayllarımı aç and Mətn yaz. The power dialog requests clean systemd poweroff.
+Touchégg handles three-finger app switching and four-finger volume controls
+on compatible touchpads. Libinput handles tapping and two-finger scrolling.
 
 The release includes BIOS, UEFI, and USB-free UEFI VM reports. RAM figures count
 the compressed system copied into memory. The reports identify the VM size,

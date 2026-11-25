@@ -34,6 +34,12 @@ for n in $(seq 1 7); do
   sleep 2
 done
 echo RELIFE_IDLE_BEGIN
+if systemctl is-active --quiet touchegg && pgrep -u student -x touchegg >/dev/null; then
+  echo RELIFE_GESTURES_OK
+else
+  systemctl status touchegg --no-pager
+  cat /home/student/.relife-gestures.log
+fi
 pgrep -a icewm
 cat /proc/meminfo
 cat /proc/swaps
@@ -72,8 +78,20 @@ awk '/MemTotal:/{t=$2} /MemFree:/{f=$2} /MemAvailable:/{a=$2} END {printf "BROWS
 echo RELIFE_BROWSER_END
 sleep 5
 fi
-echo RELIFE_SHUTDOWN_REQUEST
-systemctl poweroff
+as_student xdotool key --clearmodifiers super+shift+s
+for n in $(seq 1 15); do
+  power_window=$(as_student xdotool search --onlyvisible --class '^RelifePower$' | head -1)
+  [ -z "$power_window" ] || break
+  sleep 1
+done
+if [ -n "$power_window" ]; then
+  as_student xdotool windowactivate --sync "$power_window"
+  echo RELIFE_SHUTDOWN_REQUEST
+  as_student xdotool key space
+else
+  echo RELIFE_POWER_DIALOG_FAIL
+  systemctl poweroff
+fi
 '''
 
 def screenshot(sock_path, target):
@@ -168,7 +186,7 @@ def boot(mode):
         delta = [later - earlier for earlier, later in zip(before, after)]
         if sum(delta):
             cpu_usage.append(round(100 * (1 - (delta[3] + delta[4]) / sum(delta)), 2))
-    result = {'mode': mode, 'idle_cpu_samples_percent': cpu_usage, 'desktop': seen_idle, 'firefox': 'RELIFE_BROWSER_OK' in text,
+    result = {'mode': mode, 'idle_cpu_samples_percent': cpu_usage,  'desktop': seen_idle, 'gesture_services': 'RELIFE_GESTURES_OK' in text, 'firefox': 'RELIFE_BROWSER_OK' in text,
               'education': bool(re.search(r'^RELIFE_EDUCATION_OK\r?$', text, re.M)),
               'toram': 'RELIFE_TORAM_OK' in text, 'no_swap': 'RELIFE_SWAP_OK' in text,
               'shutdown': code == 0 and 'RELIFE_SHUTDOWN_REQUEST' in text, 'memory': metrics}
@@ -183,5 +201,7 @@ report = "VALIDATION-WINDOWS-UEFI.json" if args.disk else "VALIDATION.json"
 (OUT / report).write_text(json.dumps({'edition': args.edition, 'ram_mib': args.ram, 'hard_disks': int(bool(args.disk)), 'results': results,
     'limitations': ['Physical touchpad gestures require hardware validation.', 'No real-hardware shutdown, network browsing, media removal or pressure test.']}, indent=2))
 required = ["desktop", "education", "toram", "no_swap", "shutdown"]
-required += ["firefox"] if args.edition == "education" else ["idle_700mb_available"]
+required += ["firefox", "gesture_services"]
+if args.edition == "extreme-lite":
+    required += ["idle_700mb_available"]
 raise SystemExit(0 if all(all(result[key] for key in required) for result in results) else 1)

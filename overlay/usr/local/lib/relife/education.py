@@ -355,7 +355,7 @@ class Education:
                   "Kitabxana və laboratoriya internetsiz işləyir. Bir dərsi oxu, sualı cavablandır "
                   "və səhv etdiyin mövzunu Təkrar bölməsində karta çevir.\n\n"
                   "İşini bitirəndə faylın saxlandığı yeri yoxla. RAM sessiyasındakı fayllar "
-                  "yenidən başlatdıqda silinir. Kompüteri Başla → Söndür vasitəsilə bağla.")
+                  "yenidən başlatdıqda silinir. Kompüteri Başla → Kompüteri söndür vasitəsilə bağla.")
 
     def ai(self, pane):
         if not shutil.which("firefox-esr"):

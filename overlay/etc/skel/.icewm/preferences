@@ -34,3 +34,5 @@ TaskBarShowAPMStatus=0
 TaskBarShowMEMStatus=0
 ShowWindowList=0
 ShowAbout=0
+ShowSettingsMenu=0
+ShowFocusModeMenu=0

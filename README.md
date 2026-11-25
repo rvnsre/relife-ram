@@ -7,8 +7,8 @@ The source of the wallpaper and icons is in `desktop/make-assets.py`.
 
 | Image | Included | VM test configuration |
 | --- | --- | --- |
-| Extreme Lite | Offline Education Center, Xpdf, Mousepad, XTerm, ALSA and NetworkManager's text UI | 1 GiB RAM, 2 vCPUs |
-| Education | Extreme Lite's offline tools plus Firefox ESR, graphical network settings, PulseAudio and on-demand AI web links | 2 GiB RAM, 2 vCPUs |
+| Extreme Lite | Offline Education Center, Firefox ESR, Xpdf, Mousepad and NetworkManager’s text UI | 1 GiB RAM, 2 vCPUs |
+| Education | Extreme Lite’s tools plus graphical network and sound settings | 2 GiB RAM, 2 vCPUs |
 
 On either image open **Təhsil mərkəzi** from the desktop or Start menu. The
 bundled Azerbaijani library includes maths, physics, statistics, agronomy,
@@ -20,7 +20,7 @@ persistence or physical disk swap.
 
 ## AI and MCP
 
-In Education, select **Onlayn AI** to open ChatGPT, Claude or Gemini in
+Select **Onlayn AI** to open ChatGPT, Claude or Gemini in
 Firefox. The launcher opens the provider only after confirmation. It does not
 attach local lessons, notes or documents. Provider accounts and services are
 managed by their respective providers.
@@ -42,7 +42,8 @@ do not connect the provider to MCP.
 
 On disposable Debian 13, install `live-build debootstrap xorriso squashfs-tools
 isolinux syslinux-common grub-pc-bin grub-efi-amd64-bin grub-common dosfstools
-mtools curl ca-certificates python3`. Run `sudo bash build.sh extreme-lite` or
+mtools curl ca-certificates python3 cmake g++ pkg-config libudev-dev libinput-dev
+libpugixml-dev libcairo2-dev libx11-dev libxtst-dev libxrandr-dev libxi-dev libglib2.0-dev`. Run `sudo bash build.sh extreme-lite` or
 `sudo bash build.sh education`. The corresponding ISO and SHA-256 digest are
 written to `dist/<edition>/`.
 
@@ -65,3 +66,15 @@ their original licenses.
 
 See the [education roadmap](docs/EDUCATION-ROADMAP.md) for the status of all
 150 requirements.
+
+## Touchpad and power
+
+Tap anywhere on the active touchpad surface with one finger for a left click
+or two fingers for a right click. The physical buttons remain available. Use
+two fingers to scroll, swipe three fingers left or right to switch apps, and
+swipe four fingers up or down to adjust the volume. Three- and four-finger
+gestures require a touchpad that reports the corresponding contact count.
+
+Use **Başla → Kompüteri söndür → Söndür** for normal systemd poweroff.
+The CI test activates the same graphical dialog and verifies that the VM
+exits. Firmware and ACPI on physical computers must be tested separately.

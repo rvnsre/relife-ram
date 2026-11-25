@@ -37,7 +37,11 @@ network-manager
 wpasupplicant
 iproute2
 ca-certificates
+firefox-esr
+libpugixml1v5
+libxtst6
 alsa-utils
+pulseaudio
 mousepad
 bc
 xpdf
@@ -50,8 +54,6 @@ sudo
 PKG
 if [ "$edition" = education ]; then
   cat >> config/package-lists/relife.list.chroot <<'PKG'
-firefox-esr
-pulseaudio
 pavucontrol
 network-manager-gnome
 PKG
@@ -91,11 +93,12 @@ PROFILE
 # Project-owned lightweight UI, browser profile and touchpad settings.
 cp -a ../../overlay/. config/includes.chroot/
 python3 ../../desktop/make-assets.py config/includes.chroot
+bash ../../scripts/build-touchegg.sh config/includes.chroot
+mkdir -p config/includes.chroot/etc/systemd/system/multi-user.target.wants
+ln -sf ../touchegg.service config/includes.chroot/etc/systemd/system/multi-user.target.wants/touchegg.service
 if [ "$edition" = extreme-lite ]; then
   skel=config/includes.chroot/etc/skel
-  rm -f "$skel/Desktop/internet.desktop" config/includes.chroot/usr/share/applications/relife-firefox.desktop
-  sed -i '/relife-firefox/d' "$skel/.icewm/"{menu,toolbar,keys}
-  sed -i -e 's/nm-connection-editor/xterm -e nmtui/' "$skel/.icewm/"{menu,toolbar}
+  sed -i -e 's/nm-connection-editor/xterm -T Wi-Fi -e nmtui-connect/' "$skel/.icewm/"{menu,toolbar}
   cat > config/hooks/live/0910-locales.hook.chroot <<'LOCALES'
 #!/bin/sh
 set -eu
@@ -104,13 +107,13 @@ find /usr/share/locale -mindepth 1 -maxdepth 1 \
 LOCALES
   chmod +x config/hooks/live/0910-locales.hook.chroot
 fi
-cat > config/hooks/live/0200-firefox.hook.chroot <<'GESTURES'
+cat > config/hooks/live/0200-firefox.hook.chroot <<'FIREFOX'
 #!/bin/sh
 set -eu
 test ! -x /usr/bin/firefox-esr && exit 0
 mkdir -p /usr/lib/firefox-esr/distribution
 ln -sf /etc/firefox/policies/policies.json /usr/lib/firefox-esr/distribution/policies.json
-GESTURES
+FIREFOX
 chmod +x config/hooks/live/0200-firefox.hook.chroot
 cat > config/hooks/live/0900-trim.hook.chroot <<'TRIM'
 #!/bin/sh

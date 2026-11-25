@@ -1,0 +1,17 @@
+[Unit]
+Description=Touchégg touchpad gestures
+
+[Service]
+ExecStart=/usr/bin/touchegg --daemon
+DynamicUser=yes
+SupplementaryGroups=input
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+RestrictAddressFamilies=AF_UNIX AF_NETLINK
+CapabilityBoundingSet=
+Restart=on-failure
+RestartSec=3s
+
+[Install]
+WantedBy=multi-user.target
