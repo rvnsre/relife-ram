@@ -7,10 +7,12 @@ on:
 permissions:
   actions: read
   contents: write
-concurrency: relife-alpha-release-recovery
+concurrency:
+  group: relife-alpha-release-recovery
+  cancel-in-progress: true
 env:
-  RUN_ID: '45706605493'
-  SOURCE_SHA: 5a7b11edca489c57d359a946455fcbf626b6ed61
+  RUN_ID: '45707814480'
+  SOURCE_SHA: 7d59b11cc3853bc103764d956042595e4d2d02a0
   TAG_NAME: v0.3.0-alpha.5
 jobs:
   publish:
