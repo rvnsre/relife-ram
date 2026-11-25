@@ -78,7 +78,11 @@ awk '/MemTotal:/{t=$2} /MemFree:/{f=$2} /MemAvailable:/{a=$2} END {printf "BROWS
 echo RELIFE_BROWSER_END
 sleep 5
 fi
-as_student xdotool key --clearmodifiers super+shift+s
+# Open the actual Start menu and choose its bottom item (Kompüteri söndür).
+height=$(as_student xdotool getdisplaygeometry | awk '{print $2}')
+as_student xdotool mousemove 48 "$((height - 18))" click 1
+sleep 2
+as_student xdotool mousemove 82 "$((height - 54))" click 1
 for n in $(seq 1 15); do
   power_window=$(as_student xdotool search --onlyvisible --class '^RelifePower$' | head -1)
   [ -z "$power_window" ] || break
@@ -186,7 +190,7 @@ def boot(mode):
         delta = [later - earlier for earlier, later in zip(before, after)]
         if sum(delta):
             cpu_usage.append(round(100 * (1 - (delta[3] + delta[4]) / sum(delta)), 2))
-    result = {'mode': mode, 'idle_cpu_samples_percent': cpu_usage,  'desktop': seen_idle, 'gesture_services': 'RELIFE_GESTURES_OK' in text, 'firefox': 'RELIFE_BROWSER_OK' in text,
+    result = {'mode': mode, 'idle_cpu_samples_percent': cpu_usage, 'desktop': seen_idle, 'gesture_services': 'RELIFE_GESTURES_OK' in text, 'firefox': 'RELIFE_BROWSER_OK' in text,
               'education': bool(re.search(r'^RELIFE_EDUCATION_OK\r?$', text, re.M)),
               'toram': 'RELIFE_TORAM_OK' in text, 'no_swap': 'RELIFE_SWAP_OK' in text,
               'shutdown': code == 0 and 'RELIFE_SHUTDOWN_REQUEST' in text, 'memory': metrics}

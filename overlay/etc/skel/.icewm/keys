@@ -3,4 +3,3 @@ key "Super+b" relife-firefox
 key "XF86AudioRaiseVolume" relife-volume up
 key "XF86AudioLowerVolume" relife-volume down
 key "XF86AudioMute" relife-volume mute
-key "Super+Shift+s" relife-power-menu
