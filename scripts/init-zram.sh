@@ -8,12 +8,14 @@ memory=$(awk '/^MemTotal:/ {print $2}' /proc/meminfo)
 # Avoid allocating huge pages for sparsely used desktop mappings on 1 GiB.
 thp=/sys/kernel/mm/transparent_hugepage/enabled
 [ ! -w "$thp" ] || printf 'never\n' > "$thp"
-modprobe zram
-device=$(zramctl --find --algorithm lz4 --size 512M)
-case "$device" in
-    /dev/zram[0-9]*) ;;
-    *) exit 1 ;;
-esac
+device=/dev/zram0
+if awk -v device="$device" '$1 == device {found=1} END {exit !found}' /proc/swaps; then
+    exit 0
+fi
+modprobe zram num_devices=1
+# The module can finish loading before udev has made its device ready.
+udevadm wait --timeout=10 "$device"
+zramctl --algorithm lz4 --size 512M "$device"
 if ! mkswap "$device" || ! swapon --priority 100 "$device"; then
     zramctl --reset "$device"
     exit 1

@@ -56,7 +56,11 @@ if awk 'NR > 1 && $1 !~ /^\/dev\/zram[0-9]+$/ {bad=1} END {exit bad}' /proc/swap
   [ "$disk_backed" = true ] || echo RELIFE_NO_DISK_SWAP_OK
 fi
 [ "$(wc -l < /proc/swaps)" -eq 1 ] && echo RELIFE_SWAP_OK
-awk '$1 ~ /^\/dev\/zram[0-9]+$/ {found=1} END {exit !found}' /proc/swaps && echo RELIFE_ZRAM_OK
+if awk '$1 ~ /^\/dev\/zram[0-9]+$/ {found=1} END {exit !found}' /proc/swaps; then
+  echo RELIFE_ZRAM_OK
+else
+  journalctl -u relife-zram.service -b --no-pager -n 15
+fi
 awk '/MemTotal:/{t=$2} /MemFree:/{f=$2} /MemAvailable:/{a=$2} END {printf "IDLE_RAW_BYTES=%.0f\nIDLE_AVAILABLE_BYTES=%.0f\n",(t-f)*1024,(t-a)*1024}' /proc/meminfo
 echo RELIFE_IDLE_END
 sleep 5
