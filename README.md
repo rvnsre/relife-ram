@@ -1,4 +1,4 @@
-# ReLife RAM â€” v0.1.0 engineering prototype
+# ReLife RAM — v0.1.0 engineering prototype
 
 A free education-oriented RAM-resident Linux prototype, inspired by PorteuX. Debian 13 amd64, IceWM, Xorg. Not a validated release.
 
@@ -30,3 +30,5 @@ Start in a disposable VM (2 GB RAM, no hard disk), boot the ISO, log in to the l
 Original project scripts are GPL-3.0-only (see LICENSE). Debian packages retain their own licenses. Binary redistribution must preserve package copyright notices and corresponding-source obligations; the initial CI artifact is experimental, not a completed distribution compliance audit.
 
 References: [live-boot](https://manpages.debian.org/trixie/live-boot-doc/live-boot.7.en.html), [live-build](https://manpages.debian.org/trixie/live-build/lb_config.1.en.html). Local swap is opt-in in live-boot; this configuration explicitly uses swap=false and masks swap.target. Internal disks are not automatically mounted by this desktop configuration.
+
+To keep the RAM image small, automatic firmware bundles are disabled. Devices requiring proprietary firmware (especially Wi-Fi/graphics) need separately tested modules in a future revision. Package copyright notices are retained.

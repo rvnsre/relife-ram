@@ -5,7 +5,7 @@ cd "$(dirname "$0")"
 mkdir -p build
 cd build
 lb clean --purge || true
-lb config --mode debian --distribution trixie --architectures amd64 --binary-image iso-hybrid --bootloaders "syslinux grub-efi" --apt-indices false --debootstrap-options "--variant=minbase" --archive-areas 'main contrib non-free-firmware' --apt-recommends false --debian-installer none --memtest none --bootappend-live 'boot=live components toram=filesystem.squashfs nopersistence swap=false username=student hostname=relife console=tty0 console=ttyS0,115200n8' --chroot-squashfs-compression-type xz --iso-volume RELIFE_RAM
+lb config --mode debian --distribution trixie --architectures amd64 --binary-image iso-hybrid --bootloaders "syslinux grub-efi" --firmware-chroot false --firmware-binary false --apt-indices false --debootstrap-options "--variant=minbase" --archive-areas 'main contrib non-free-firmware' --apt-recommends false --debian-installer none --memtest none --bootappend-live 'boot=live components toram=filesystem.squashfs nopersistence swap=false username=student hostname=relife console=tty0 console=ttyS0,115200n8' --chroot-squashfs-compression-type xz --iso-volume RELIFE_RAM
 mkdir -p config/package-lists config/includes.chroot/etc/systemd/journald.conf.d config/includes.chroot/etc/skel config/includes.chroot/usr/local/bin config/hooks/live
 cat > config/package-lists/relife.list.chroot <<'PKG'
 live-boot
@@ -95,7 +95,8 @@ set -eu
 printf '\nPre-trim disk usage:\n'
 du -x -h -d 2 /usr /var | sort -h | tail -35
 apt-get clean
-rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/* /usr/share/doc/* /usr/share/man/* /usr/share/locale/*
+rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/* /usr/share/man/* /usr/share/locale/*
+find /usr/share/doc -type f ! -name copyright -delete
 printf '\nPost-trim disk usage:\n'
 du -x -h -d 2 /usr /var | sort -h | tail -35
 TRIM
