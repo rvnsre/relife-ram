@@ -5,6 +5,9 @@ set -eu
 # backing is assigned to the RAM device.
 memory=$(awk '/^MemTotal:/ {print $2}' /proc/meminfo)
 [ "$memory" -le 1177600 ] || exit 0
+# Avoid allocating huge pages for sparsely used desktop mappings on 1 GiB.
+thp=/sys/kernel/mm/transparent_hugepage/enabled
+[ ! -w "$thp" ] || printf 'never\n' > "$thp"
 modprobe zram
 device=$(zramctl --find --algorithm lz4 --size 512M)
 case "$device" in
