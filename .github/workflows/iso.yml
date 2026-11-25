@@ -32,6 +32,7 @@ jobs:
         run: bash build.sh "${{ matrix.edition }}" 2>&1 | tee build.log
         shell: bash --noprofile --norc -eo pipefail {0}
       - name: Build Windows boot payload and test disk
+        id: payload
         if: matrix.edition == 'extreme-lite'
         run: |
           bash windows/make-payload.sh
@@ -39,9 +40,14 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: relife-${{ matrix.edition }}-candidate
-          path: |
-            dist/${{ matrix.edition }}/*.iso
-            dist/${{ matrix.edition }}/ReLife-Windows-UEFI-Payload.zip
+          path: dist/${{ matrix.edition }}/*.iso
+          compression-level: 0
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        if: matrix.edition == 'extreme-lite'
+        with:
+          name: relife-windows-payload-candidate
+          path: dist/extreme-lite/ReLife-Windows-UEFI-Payload.zip
           compression-level: 0
           if-no-files-found: error
       - name: Test BIOS and UEFI offline desktop, education and shutdown
@@ -54,7 +60,7 @@ jobs:
             python3 tests/boot.py education --ram 2048
           fi
       - name: Boot the staged FAT32 loader in UEFI with no ISO attached
-        if: matrix.edition == 'extreme-lite'
+        if: always() && steps.payload.outcome == 'success'
         run: python3 tests/boot.py extreme-lite --ram 1024 --disk dist/extreme-lite/windows-test.img
       - uses: actions/upload-artifact@v4
         if: always()
