@@ -9,13 +9,13 @@ permissions:
   contents: write
 concurrency: relife-alpha-release-recovery
 env:
-  RUN_ID: '45695990313'
-  SOURCE_SHA: 4ff2e2743c053f680d6ae49895ba1d2b14dd4c32
-  TAG_NAME: v0.3.0-alpha.4
+  RUN_ID: '45706605493'
+  SOURCE_SHA: 5a7b11edca489c57d359a946455fcbf626b6ed61
+  TAG_NAME: v0.3.0-alpha.5
 jobs:
   publish:
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
         with:
@@ -73,11 +73,12 @@ jobs:
           cp "$lite/bios-files.png" release/ReLife-Files.png
           cp "$lite/bios-start.png" release/ReLife-Start.png
           cp "$lite/bios-switcher.png" release/ReLife-Window-Switcher.png
+          cp "$lite/bios-network.png" release/ReLife-Network.png
           (cd release && sha256sum *.iso *.exe *.zip > SHA256SUMS)
           cat > /tmp/relife-release-notes.md <<'NOTES'
-          ReLife RAM Alpha 4 ships Extreme Lite and Education live ISOs with a tiled Start menu, a Wi-Fi panel and a visible three-finger window picker.
+          ReLife RAM Alpha 5 includes a new light desktop theme, original violet artwork and an app search in Start. The window picker, network and power panels and education tools share the new palette and typography.
 
-          Extreme Lite starts Firefox ESR on the 1 GiB BIOS and UEFI test VMs. It uses compressed memory on those machines without disk swap. The attached validation reports include idle RAM, the Firefox network-page test and graphical shutdown. Virtual Ethernet is tested. Physical Wi-Fi and touchpad support still depend on the device.
+          Both images use XZ boot archives and 1 MiB SquashFS blocks with the x86 filter. Extreme Lite starts Firefox ESR on the 1 GiB BIOS and UEFI test VMs and uses compressed memory without disk swap. The attached reports include idle RAM, the Firefox network-page test, Start search and graphical shutdown. Physical Wi-Fi and touchpad support depend on the device.
 
           Extreme Lite focuses on older Wi-Fi adapters. Education includes the broader firmware bundle. Windows Boot Setup stages the UEFI payload on a dedicated FAT32 volume. See the repository's Windows README for installation and recovery steps.
           NOTES
@@ -89,7 +90,7 @@ jobs:
             if [ -n "$release_info" ]; then break; fi
             if release_info=$(gh api "repos/$GITHUB_REPOSITORY/releases" -X POST \
               -f tag_name="$TAG_NAME" -f target_commitish="$GITHUB_SHA" \
-              -f name='ReLife RAM v0.3.0 Alpha 4' -f body=@/tmp/relife-release-notes.md \
+              -f name='ReLife RAM v0.3.0 Alpha 5' -f body=@/tmp/relife-release-notes.md \
               -F draft=true -F prerelease=true); then break; fi
             sleep "$((attempt * 5))"
             release_info=$(lookup)
