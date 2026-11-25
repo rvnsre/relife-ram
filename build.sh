@@ -13,6 +13,8 @@ cd "build/$edition"
 lb clean --purge || true
 lb config --mode debian --distribution trixie --architectures amd64 --binary-image iso-hybrid --bootloaders "syslinux grub-efi" --firmware-chroot false --firmware-binary false --apt-indices false --debootstrap-options "--variant=minbase" --archive-areas 'main contrib non-free-firmware' --apt-recommends false --debian-installer none --memtest none --bootappend-live 'boot=live components toram=filesystem.squashfs noeject nopersistence swap=false username=student hostname=relife locales=C.UTF-8 console=tty0 console=ttyS0,115200n8' --chroot-squashfs-compression-type xz --checksums none --uefi-secure-boot disable --iso-volume RELIFE_RAM
 mkdir -p config/package-lists config/includes.chroot/etc/systemd/journald.conf.d config/includes.chroot/etc/skel config/includes.chroot/usr/local/bin config/hooks/live
+mkdir -p config/includes.chroot/etc/initramfs-tools/conf.d
+printf 'COMPRESS=xz\n' > config/includes.chroot/etc/initramfs-tools/conf.d/relife-compression
 cat > config/package-lists/relife.list.chroot <<'PKG'
 live-boot
 live-config
@@ -150,9 +152,9 @@ set -eu
 sed -i 's/^timeout .*/timeout 50/' isolinux/isolinux.cfg
 MENU
 chmod +x config/hooks/live/0999-timeout.hook.binary
-if [ "$edition" = extreme-lite ]; then
-  export MKSQUASHFS_OPTIONS="-b 1M -Xbcj x86"
-fi
+# Match the maximum SquashFS block size and let xz choose its x86 filter
+# per block. Both images retain the usual live-build module list.
+export MKSQUASHFS_OPTIONS="-b 1M -Xbcj x86"
 lb build
 out="../../dist/$edition"
 mkdir -p "$out"

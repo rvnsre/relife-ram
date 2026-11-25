@@ -130,21 +130,39 @@ if [ -n "$browser_window" ]; then
   as_student xdotool key alt+F4
 fi
 fi
-# Open the new taskbar Start panel and use its power action.
+# Exercise Start search from the taskbar, then use its power action.
 height=$(as_student xdotool getdisplaygeometry | awk '{print $2}')
-as_student xdotool mousemove 15 "$((height - 17))" click 1
-for n in $(seq 1 10); do
-  start_window=$(as_student xdotool search --onlyvisible --class '^RelifeStart$' | head -1)
-  [ -z "$start_window" ] || break
-  sleep 1
-done
+open_start() {
+  as_student xdotool mousemove 15 "$((height - 17))" click 1
+  for n in $(seq 1 10); do
+    start_window=$(as_student xdotool search --onlyvisible --class '^RelifeStart$' | head -1)
+    [ -z "$start_window" ] || break
+    sleep 1
+  done
+}
+open_start
 if [ -n "$start_window" ]; then
+  as_student xdotool windowactivate --sync "$start_window"
   echo RELIFE_START_END
-  sleep 3
-  geometry=$(as_student xdotool getwindowgeometry --shell "$start_window")
-  x=$(printf '%s\n' "$geometry" | sed -n 's/^X=//p')
-  width=$(printf '%s\n' "$geometry" | sed -n 's/^WIDTH=//p')
-  as_student xdotool mousemove "$((x + width - 90))" "$((height - 77))" click 1
+  sleep 2
+  # "b" matches Şəbəkə with a keyboard layout independent ASCII keystroke.
+  as_student xdotool type b
+  as_student xdotool key Return
+  for n in $(seq 1 10); do
+    network_window=$(as_student xdotool search --onlyvisible --class '^RelifeNetwork$' | head -1)
+    [ -z "$network_window" ] || break
+    sleep 1
+  done
+  if [ -n "$network_window" ]; then
+    echo RELIFE_START_SEARCH_OK
+    sleep 2
+    as_student xdotool windowactivate --sync "$network_window" key Escape
+  fi
+  start_window=$(as_student xdotool search --onlyvisible --class '^RelifeStart$' | head -1)
+  [ -n "$start_window" ] || open_start
+fi
+if [ -n "$start_window" ]; then
+  as_student xdotool windowactivate --sync "$start_window" key alt+p
 fi
 for n in $(seq 1 15); do
   power_window=$(as_student xdotool search --onlyvisible --class '^RelifePower$' | head -1)
@@ -222,7 +240,7 @@ def boot(mode):
     reader = threading.Thread(target=read, daemon=True)
     reader.start()
     stage = 0
-    seen_idle = seen_browser = seen_education = seen_files = seen_start = seen_switch = False
+    seen_idle = seen_browser = seen_education = seen_files = seen_start = seen_switch = seen_network_panel = False
     deadline = time.monotonic() + 420
     heartbeat = time.monotonic()
     try:
@@ -252,6 +270,9 @@ def boot(mode):
             if not seen_start and 'RELIFE_START_END' in text:
                 screenshot(qmp, OUT / f'{mode}-start.ppm')
                 seen_start = True
+            if not seen_network_panel and 'RELIFE_START_SEARCH_OK' in text:
+                screenshot(qmp, OUT / f'{mode}-network.ppm')
+                seen_network_panel = True
             if not seen_switch and 'RELIFE_SWITCHER_END' in text:
                 screenshot(qmp, OUT / f'{mode}-switcher.ppm')
                 seen_switch = True
@@ -280,6 +301,7 @@ def boot(mode):
             cpu_usage.append(round(100 * (1 - (delta[3] + delta[4]) / sum(delta)), 2))
     result = {'mode': mode, 'idle_cpu_samples_percent': cpu_usage, 'desktop': seen_idle, 'gesture_services': 'RELIFE_GESTURES_OK' in text, 'firefox': 'RELIFE_BROWSER_OK' in text,
               'network': 'RELIFE_NETWORK_OK' in text, 'switcher': 'RELIFE_SWITCHER_OK' in text,
+              'start_search': 'RELIFE_START_SEARCH_OK' in text,
               'education': bool(re.search(r'^RELIFE_EDUCATION_OK\r?$', text, re.M)),
               'toram': 'RELIFE_TORAM_OK' in text, 'no_swap': 'RELIFE_SWAP_OK' in text,
               'no_disk_swap': 'RELIFE_NO_DISK_SWAP_OK' in text, 'zram': 'RELIFE_ZRAM_OK' in text,
@@ -295,7 +317,7 @@ report = "VALIDATION-WINDOWS-UEFI.json" if args.disk else "VALIDATION.json"
 (OUT / report).write_text(json.dumps({'edition': args.edition, 'ram_mib': args.ram, 'hard_disks': int(bool(args.disk)), 'results': results,
     'limitations': ['Physical touchpad gestures require hardware validation.', 'Networking test checks DHCP and HTTP in Firefox through QEMU. Physical Wi-Fi, captive portals and public internet need separate validation.']}, indent=2))
 required = ["desktop", "education", "toram", "no_disk_swap", "shutdown"]
-required += ["firefox", "gesture_services", "network", "switcher"]
+required += ["firefox", "gesture_services", "network", "start_search", "switcher"]
 if args.edition == "extreme-lite" and args.ram == 1024:
     required += ["zram", "idle_700mb_available"]
 raise SystemExit(0 if all(all(result[key] for key in required) for result in results) else 1)

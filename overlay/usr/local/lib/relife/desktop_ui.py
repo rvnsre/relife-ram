@@ -59,14 +59,27 @@ def place(root, x=None, bottom=False):
 
 def start():
     root = panel("RelifeStart", "Başla")
-    root.overrideredirect(True)
+    root.wm_attributes("-type", "dialog")
     root.attributes("-topmost", True)
-    style = ttk.Style()
-    style.configure("Tile.TButton", padding=(14, 14), anchor="w", background="#e0eef6")
-    style.map("Tile.TButton", background=[("active", "#c7e3f2"), ("pressed", "#aad4ea")])
-    ttk.Label(root, text="Başla", style="Header.TLabel").pack(fill="x")
-    tiles = ttk.Frame(root, padding=12)
-    tiles.pack(fill="both", expand=True)
+    root.configure(highlightbackground=appearance.BORDER, highlightthickness=1)
+    shell = ttk.Frame(root, padding=(22, 18, 22, 14), style="Shell.TFrame")
+    shell.pack(fill="both", expand=True)
+    style = ttk.Style(root)
+    style.configure("Tile.TButton", anchor="w")
+
+    ttk.Label(shell, text="ReLife", style="Accent.TLabel").pack(anchor="w")
+    ttk.Label(shell, text="Başla", style="Hero.TLabel").pack(anchor="w", pady=(0, 10))
+    query = tk.StringVar()
+    search = ttk.Entry(shell, textvariable=query)
+    search.pack(fill="x", pady=(0, 12))
+    hint = ttk.Label(shell, text="Tətbiq axtar", style="Muted.TLabel", cursor="xterm")
+    hint.place(in_=search, x=12, rely=.5, anchor="w")
+    hint.bind("<Button-1>", lambda event: search.focus_set())
+
+    tiles = ttk.Frame(shell, style="Shell.TFrame", width=min(480, max(300, root.winfo_screenwidth() - 58)),
+                      height=208)
+    tiles.pack(fill="x")
+    tiles.grid_propagate(False)
     for col in range(2):
         tiles.columnconfigure(col, weight=1, uniform="apps")
 
@@ -74,32 +87,60 @@ def start():
         root.destroy()
         launch(*args)
 
-    apps = [
-        ("İnternet", "Dərs saytlarını aç", "internet", ("relife-firefox",)),
-        ("Fayllarım", "Sənədləri və qovluqları aç", "files", ("pcmanfm",)),
-        ("Təhsil mərkəzi", "İnternetsiz dərs və məşq", "education", ("relife-education",)),
-        ("Mətn yaz", "Qeyd və tapşırıq yaz", "write", ("mousepad",)),
-        ("Şəbəkə", "Wi-Fi və kabel bağlantısı", "network", ("relife-desktop", "network")),
-        ("Açıq pəncərələr", "Başqa tətbiqə keç", "windows", ("relife-desktop", "switch")),
-    ]
-    images = []
-    for i, (label, description, icon, argv) in enumerate(apps):
-        image = tk.PhotoImage(file=f"/usr/share/icons/relife/{icon}.png")
-        images.append(image)
-        button = ttk.Button(tiles, text=f"{label}\n{description}", image=image, compound="left",
-                            style="Tile.TButton", command=lambda argv=argv: open_app(*argv))
-        button.grid(row=i // 2, column=i % 2, sticky="ew", padx=4, pady=4)
+    apps = (
+        ("Təhsil mərkəzi", "education", ("relife-education",)),
+        ("İnternet", "internet", ("relife-firefox",)),
+        ("Fayllarım", "files", ("pcmanfm",)),
+        ("Mətn yaz", "write", ("mousepad",)),
+        ("Şəbəkə", "network", ("relife-desktop", "network")),
+        ("Açıq pəncərələr", "windows", ("relife-desktop", "switch")),
+    )
+    images = [tk.PhotoImage(file=f"/usr/share/icons/relife/{icon}.png") for _, icon, _ in apps]
+    buttons = [ttk.Button(tiles, text=name, image=image, compound="left", style="Tile.TButton",
+                          command=lambda argv=argv: open_app(*argv))
+               for (name, _, argv), image in zip(apps, images)]
+    empty = ttk.Label(tiles, text="Uyğun tətbiq tapılmadı.", style="Caption.TLabel")
+    matching = []
 
-    footer = ttk.Frame(root, padding=(16, 0, 16, 12))
+    def filter_apps(*_):
+        search_text = query.get().strip().replace("İ", "i").casefold()
+        hint.place_forget()
+        if not query.get():
+            hint.place(in_=search, x=12, rely=.5, anchor="w")
+        empty.grid_remove()
+        matching.clear()
+        for (name, _, _), button in zip(apps, buttons):
+            button.grid_remove()
+            if search_text in name.replace("İ", "i").casefold():
+                row, col = divmod(len(matching), 2)
+                button.grid(row=row, column=col, sticky="ew", padx=(0, 6) if col == 0 else (6, 0),
+                            pady=(0, 7))
+                matching.append(button)
+        if not matching:
+            empty.grid(row=0, column=0, columnspan=2, pady=30)
+
+    def choose_first(event):
+        if matching:
+            matching[0].invoke()
+        return "break"
+
+    query.trace_add("write", filter_apps)
+    search.bind("<Return>", choose_first)
+    search.bind("<Down>", lambda event: matching[0].focus_set() if matching else None)
+    filter_apps()
+
+    ttk.Separator(shell).pack(fill="x", pady=(1, 12))
+    footer = ttk.Frame(shell, style="Shell.TFrame")
     footer.pack(fill="x")
     ttk.Button(footer, text="Kömək", command=lambda: open_app("relife-help")).pack(side="left")
+
     def power():
         open_app("relife-power-menu")
+
     ttk.Button(footer, text="Kompüteri söndür", command=power).pack(side="right")
     root.bind("<Alt-p>", lambda event: power())
-    place(root, x=4, bottom=True)
-    root.wait_visibility()
-    root.focus_force()
+    place(root, x=12, bottom=True)
+    search.focus_set()
     root.bind("<FocusOut>", lambda event: root.after_idle(
         lambda: root.destroy() if root.focus_displayof() is None else None))
     root.mainloop()
@@ -119,7 +160,7 @@ def switch(direction):
     root.attributes("-topmost", True)
     root.wm_attributes("-type", "dialog")
     ttk.Label(root, text="Açıq pəncərələr", style="Header.TLabel").pack(fill="x")
-    body = ttk.Frame(root, padding=14)
+    body = ttk.Frame(root, padding=(22, 16))
     body.pack(fill="both")
     if not windows:
         ttk.Label(body, text="Hazırda açıq tətbiq yoxdur.").pack(pady=12, padx=40)
@@ -127,9 +168,11 @@ def switch(direction):
         place(root)
         root.mainloop()
         return
-    entries = tk.Listbox(body, width=52, height=min(len(windows), 8), activestyle="none",
-                         font="TkDefaultFont", highlightthickness=1, highlightcolor=appearance.ACCENT,
-                         selectbackground=appearance.ACCENT, selectforeground="#ffffff", borderwidth=0)
+    width = min(52, max(25, (root.winfo_screenwidth() - 84) // 9))
+    entries = tk.Listbox(body, width=width, height=min(len(windows), 8), activestyle="none",
+                         font=(appearance.FONT, 11), highlightthickness=1, highlightcolor=appearance.ACCENT,
+                         background="#ffffff", foreground=appearance.INK, highlightbackground=appearance.BORDER,
+                         selectbackground=appearance.TINT, selectforeground=appearance.INK, borderwidth=0)
     entries.grid(row=0, column=0, sticky="nsew")
     scroll = ttk.Scrollbar(body, orient="vertical", command=entries.yview)
     scroll.grid(row=0, column=1, sticky="ns")
@@ -174,10 +217,12 @@ def switch(direction):
 def network():
     root = panel("RelifeNetwork", "Şəbəkə")
     ttk.Label(root, text="Şəbəkə", style="Header.TLabel").pack(fill="x")
-    body = ttk.Frame(root, padding=16)
+    body = ttk.Frame(root, padding=(22, 16))
     body.pack(fill="both")
     status = tk.StringVar()
-    ttk.Label(body, textvariable=status, width=46, wraplength=360).pack(anchor="w", pady=(0, 12))
+    card = ttk.Frame(body, padding=(14, 11), style="Practice.TFrame")
+    card.pack(fill="x", pady=(0, 13))
+    ttk.Label(card, textvariable=status, width=42, wraplength=334, style="Practice.TLabel").pack(anchor="w")
     box = ttk.Frame(body)
     box.pack(fill="x")
 

@@ -1,13 +1,12 @@
-/* This user stylesheet follows the ReLife window frame and keeps GTK controls native. */
-@define-color theme_selected_bg_color #236f67;
+/* Shared ReLife colors for native GTK applications. */
+@define-color theme_selected_bg_color #5240b6;
 @define-color theme_selected_fg_color #ffffff;
 
-window.background, .sidebar { background-color: #f3f7fa; color: #172f42; }
-toolbar { background: #edf4f7; padding: 4px 6px; border-bottom: 1px solid #cedbe4; }
-entry { border-radius: 6px; }
-button { border-radius: 6px; }
-button:focus, entry:focus { outline-color: #247a72; }
+window.background, .sidebar { background-color: #faf8fd; color: #211e36; }
+toolbar { background: #f1edf9; padding: 5px 7px; border-bottom: 1px solid #ded9ed; }
+entry, button { border-radius: 8px; }
+button:focus, entry:focus { outline-color: #5240b6; }
 .sidebar row:selected, iconview:selected, treeview.view:selected {
-    background-color: #236f67;
+    background-color: #5240b6;
     color: #ffffff;
 }

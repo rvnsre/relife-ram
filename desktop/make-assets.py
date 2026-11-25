@@ -18,10 +18,10 @@ def xpm(path, width, height, palette, pixel):
 def icon_pixel(kind, x, y):
     if not (2 <= x < 30 and 2 <= y < 30):
         return " "
-    if min(x - 2, 29 - x) + min(y - 2, 29 - y) < 4:
+    if math.hypot(max(8 - x, x - 23, 0), max(8 - y, y - 23, 0)) > 6:
         return " "
     if kind == "start":
-        return "w" if (8 <= x <= 22 and y in (9, 15, 21)) or (8 <= x <= 10 and 9 <= y <= 21) else "."
+        return "w" if (9 <= x <= 22 and y in (9, 10, 15, 16, 21, 22)) or (9 <= x <= 11 and 9 <= y <= 22) else "."
     if kind == "windows":
         return "w" if ((8 <= x <= 20 and 9 <= y <= 19 and (x in (8, 20) or y in (9, 19)))
                        or (12 <= x <= 24 and 13 <= y <= 23 and (x == 24 or y == 23))) else "."
@@ -53,18 +53,32 @@ def icon_pixel(kind, x, y):
 
 
 def wallpaper(path):
-    width, height = 960, 600
-    colors = ((19, 37, 62), (30, 65, 103), (37, 85, 125), (45, 109, 146), (53, 132, 161))
+    width, height = 1152, 720
     rows = []
     for y in range(height):
-        row = bytearray([0])
+        v = y / height
+        row = bytearray()
         for x in range(width):
-            u, v = (x - 780) / 565, (y - 480) / 440
-            field = math.hypot(u + .30 * v, v) + .17 * math.sin(u * 3.8 - v * 2.5)
-            band = sum(field < bound for bound in (1.02, .81, .61, .41))
-            light = round(5 * x / width + 3 * (1 - y / height))
-            row.extend(channel + light for channel in colors[band])
-        rows.append(row)
+            u = x / width
+            glow = math.exp(-7 * ((u - .76) ** 2 + (v - .25) ** 2))
+            color = (int(47 + 34 * u + 74 * glow), int(39 + 69 * glow),
+                     int(82 + 30 * u + 81 * glow))
+            # Overlapping bands give the wallpaper depth without a large stored asset.
+            ridge = .58 + .21 * math.sin((u - .21) * 4.5)
+            for offset, thickness, light, dark in (
+                (.14, .25, (106, 112, 205), (60, 53, 134)),
+                (.03, .20, (162, 153, 243), (80, 68, 155)),
+                (-.07, .14, (222, 193, 251), (117, 98, 192)),
+            ):
+                distance = (v - ridge - offset) / thickness
+                if abs(distance) < 1:
+                    gradient = (1 - distance) / 2
+                    opacity = min(1, (1 - abs(distance)) * 55)
+                    color = tuple(round(base + (lo + (hi - lo) * gradient - base) * opacity)
+                                  for base, lo, hi in zip(color, dark, light))
+            row.extend(color)
+        # PNG's Sub filter keeps the smooth gradients compact.
+        rows.append(bytes([1, *row[:3], *((row[i] - row[i - 3]) % 256 for i in range(3, len(row)))]))
 
     png(path, width, height, 2, b"".join(rows))
 
@@ -80,10 +94,10 @@ def png(path, width, height, color_type, rows):
 
 
 def theme_assets(theme):
-    for suffix, background, glyph in (("A", "#183246", "#F1FAFF"), ("I", "#263746", "#CEDCE6"),
-                                      ("O", "#34586D", "#FFFFFF")):
+    for suffix, background, glyph in (("A", "#F6F3FE", "#29243F"), ("I", "#EFEDF6", "#655D7D"),
+                                      ("O", "#E4DCF8", "#29243F")):
         for name in ("close", "maximize", "restore", "minimize"):
-            hover = "#9E3049" if name == "close" and suffix == "O" else background
+            hover = "#F5CCD8" if name == "close" and suffix == "O" else background
 
             def control(x, y):
                 y %= 32
@@ -105,11 +119,11 @@ def theme_assets(theme):
                 xpm(theme / f"title{suffix}{part}.xpm", 1, 32, {".": background}, lambda x, y: ".")
 
     taskbar = theme / "taskbar"
-    for name, base, stripe in (("taskbarbg", "#101F2D", "#29475B"),
-                               ("taskbuttonbg", "#182C3C", "#182C3C"),
-                               ("taskbuttonactive", "#234B60", "#56D4C6"),
-                               ("taskbuttonminimized", "#142434", "#142434"),
-                               ("toolbuttonbg", "#101F2D", "#101F2D")):
+    for name, base, stripe in (("taskbarbg", "#F6F3FC", "#DFD9EF"),
+                               ("taskbuttonbg", "#EEE9FA", "#EEE9FA"),
+                               ("taskbuttonactive", "#E4DBFB", "#7055CD"),
+                               ("taskbuttonminimized", "#F1EDF8", "#F1EDF8"),
+                               ("toolbuttonbg", "#F6F3FC", "#F6F3FC")):
         xpm(taskbar / f"{name}.xpm", 1, 32, {".": base, "-": stripe},
             lambda x, y: "-" if y == 31 and name == "taskbuttonactive" or y == 0 and name == "taskbarbg" else ".")
     # The label is baked into the small IceWM start-button pixmap.
@@ -132,7 +146,7 @@ def theme_assets(theme):
             return "w"
         return " "
 
-    xpm(taskbar / "icewm.xpm", 92, 30, {" ": "None", "a": "#66E0C8", "w": "#EAFBFF"}, start)
+    xpm(taskbar / "icewm.xpm", 92, 30, {" ": "None", "a": "#6549C3", "w": "#302648"}, start)
 
 
 def main():
@@ -141,9 +155,9 @@ def main():
     dest = parser.parse_args().overlay / "usr/share"
     wallpaper(dest / "relife/desktop.png")
     theme_assets(dest / "icewm/themes/ReLife")
-    colors = {"start":"#235A78", "windows":"#436582", "education": "#256D66", "files": "#A75B18", "write": "#3F5986",
-              "help": "#555488", "internet": "#275E83", "network": "#275E83",
-              "sound": "#3A5F76", "power": "#743E58"}
+    colors = {"start":"#5A41BF", "windows":"#6954A4", "education": "#398074", "files": "#9D611C", "write": "#7152C2",
+              "help": "#685596", "internet": "#3465AD", "network": "#3465AD",
+              "sound": "#785798", "power": "#A34663"}
     for name, color in colors.items():
         xpm(dest / f"icons/relife/{name}.xpm", 32, 32, {" ": "None", ".": color, "w": "#FFFFFF"},
             lambda x, y: icon_pixel(name, x, y))

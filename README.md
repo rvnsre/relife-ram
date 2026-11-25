@@ -2,7 +2,8 @@
 
 ReLife is a Debian 13 amd64 live system for older computers. IceWM and PCManFM
 provide a bottom taskbar, a Start menu and labelled desktop shortcuts.
-Both images use original ReLife artwork and a matching native desktop theme.
+Both images use original ReLife artwork, a searchable Start menu and a light
+theme shared by the native desktop panels and GTK applications.
 The source of the wallpaper and icons is in `desktop/make-assets.py`.
 
 | Image | Included | VM test configuration |
@@ -48,7 +49,8 @@ isolinux syslinux-common grub-pc-bin grub-efi-amd64-bin grub-common dosfstools
 mtools curl ca-certificates python3 cmake g++ pkg-config libudev-dev libinput-dev
 libpugixml-dev libcairo2-dev libx11-dev libxtst-dev libxrandr-dev libxi-dev libglib2.0-dev`. Run `sudo bash build.sh extreme-lite` or
 `sudo bash build.sh education`. The corresponding ISO and SHA-256 digest are
-written to `dist/<edition>/`.
+written to `dist/<edition>/`. Both images use an XZ boot archive and 1 MiB
+SquashFS blocks with the x86 compression filter.
 
 On a Debian host with QEMU, OVMF and Pillow run `python3 tests/boot.py
 extreme-lite --ram 1024` or `python3 tests/boot.py education --ram 2048`.
