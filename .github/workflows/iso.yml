@@ -20,7 +20,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install build and test tools
-        run: apt-get update && apt-get install -y live-build debootstrap xorriso squashfs-tools isolinux syslinux-common grub-pc-bin grub-efi-amd64-bin dosfstools mtools ca-certificates curl qemu-system-x86 ovmf python3 python3-pil
+        run: apt-get update && apt-get install -y live-build debootstrap xorriso squashfs-tools isolinux syslinux-common grub-pc-bin grub-efi-amd64-bin grub-common fdisk dosfstools mtools ca-certificates curl qemu-system-x86 ovmf python3 python3-pil
       - name: Validate learning tools and build scripts
         env:
           PYTHONDONTWRITEBYTECODE: 1
@@ -31,10 +31,17 @@ jobs:
       - name: Build hybrid ISO
         run: bash build.sh "${{ matrix.edition }}" 2>&1 | tee build.log
         shell: bash --noprofile --norc -eo pipefail {0}
+      - name: Build Windows boot payload and test disk
+        if: matrix.edition == 'extreme-lite'
+        run: |
+          bash windows/make-payload.sh
+          bash windows/make-test-disk.sh
       - uses: actions/upload-artifact@v4
         with:
           name: relife-${{ matrix.edition }}-candidate
-          path: dist/${{ matrix.edition }}/*.iso
+          path: |
+            dist/${{ matrix.edition }}/*.iso
+            dist/${{ matrix.edition }}/ReLife-Windows-UEFI-Payload.zip
           compression-level: 0
           if-no-files-found: error
       - name: Test BIOS and UEFI offline desktop, education and shutdown
@@ -46,6 +53,9 @@ jobs:
           else
             python3 tests/boot.py education --ram 2048
           fi
+      - name: Boot the staged FAT32 loader in UEFI with no ISO attached
+        if: matrix.edition == 'extreme-lite'
+        run: python3 tests/boot.py extreme-lite --ram 1024 --disk dist/extreme-lite/windows-test.img
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -59,3 +69,59 @@ jobs:
             build.log
           if-no-files-found: error
           retention-days: 14
+
+  windows:
+    runs-on: windows-2025
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: windows
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: windows/go.mod
+          cache: false
+      - name: Verify Windows staging and rollback on a disposable FAT32 VHD
+        run: ./test-fat32.ps1
+      - name: Build and run the Windows executable
+        run: |
+          go build -trimpath -o ReLife-Windows-Boot-Setup.exe .
+          ./ReLife-Windows-Boot-Setup.exe -help
+      - uses: actions/upload-artifact@v4
+        with:
+          name: relife-windows-setup
+          path: windows/ReLife-Windows-Boot-Setup.exe
+          if-no-files-found: error
+
+  publish:
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push' && contains(github.event.head_commit.message, '[relife-alpha]')
+    needs: [build, windows]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: '*-candidate'
+          path: release
+          merge-multiple: true
+      - uses: actions/download-artifact@v4
+        with:
+          name: relife-windows-setup
+          path: release
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: '*-validation'
+          path: evidence
+      - name: Publish tested prerelease assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp evidence/relife-extreme-lite-validation/dist/extreme-lite/VALIDATION.json release/VALIDATION-EXTREME-LITE.json
+          cp evidence/relife-extreme-lite-validation/dist/extreme-lite/VALIDATION-WINDOWS-UEFI.json release/
+          cp evidence/relife-education-validation/dist/education/VALIDATION.json release/VALIDATION-EDUCATION.json
+          (cd release && sha256sum *.iso *.exe *.zip > SHA256SUMS)
+          gh release create v0.3.0-alpha.1 release/* --target "$GITHUB_SHA" \
+            --prerelease --title 'ReLife RAM v0.3.0 Alpha 1' --notes-file RELEASE-NOTES.md

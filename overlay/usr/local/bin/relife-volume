@@ -1,5 +1,13 @@
 #!/bin/sh
 set -eu
+if ! command -v pactl >/dev/null; then
+ case "${1:-}" in
+  up) exec amixer -q sset Master 5%+ ;;
+  down) exec amixer -q sset Master 5%- ;;
+  mute) exec amixer -q sset Master toggle ;;
+  *) exit 2 ;;
+ esac
+fi
 case "${1:-}" in
  up|down)
    current=$(pactl get-sink-volume @DEFAULT_SINK@ | sed -n 's/.* \([0-9][0-9]*\)%.*/\1/p' | head -n 1)

@@ -1,60 +1,61 @@
-# ReLife RAM v0.2.0 — education desktop candidate
+# ReLife RAM
 
-A small Debian 13 amd64 live system with a familiar bottom taskbar, Start menu,
-large labelled desktop icons, file manager, text editor and preinstalled Firefox ESR.
-The desktop uses IceWM and PCManFM, with tiny project-owned XPM icons and flat colours.
-It does not include Windows code or a heavy desktop environment.
+ReLife is a Debian 13 amd64 live system for older computers. IceWM and PCManFM
+provide a bottom taskbar, a Start menu and labelled desktop shortcuts.
 
-## Build
+| Image | Included | VM test configuration |
+| --- | --- | --- |
+| Extreme Lite | Offline Education Center, Xpdf, Mousepad, XTerm, ALSA and NetworkManager's text UI | 1 GiB RAM, 2 vCPUs |
+| Education | Extreme Lite's offline tools plus Firefox ESR, graphical network settings, PulseAudio and on-demand AI web links | 2 GiB RAM, 2 vCPUs |
 
-On disposable Debian 13: install live-build, debootstrap, xorriso, squashfs-tools,
-isolinux, syslinux-common, grub-pc-bin, grub-efi-amd64-bin, dosfstools, mtools, curl
-and ca-certificates; run `sudo bash build.sh`. GitHub Actions builds the actual ISO.
-The `overlay/` directory must be alongside `build.sh`.
+On either image open **Təhsil mərkəzi** from the desktop or Start menu. The
+bundled Azerbaijani library includes maths, physics, statistics, agronomy,
+English and digital literacy exercises. The center also has cards with spaced
+repetition, text export, a lesson planner, science calculations and a focus
+timer. Export work before closing the app or powering off. Live sessions use a
+volatile overlay, load the compressed system into RAM and start without
+persistence or physical disk swap.
 
-The build downloads Touchégg 2.0.18 from its official GitHub release, prints its
-SHA-256 and installs its dependencies from Debian. Other software is from Debian.
-Project scripts/assets are GPL-3.0-only; bundled packages retain their own licenses.
+## AI and MCP
 
-## Changes
+In Education, select **Onlayn AI** to open ChatGPT, Claude or Gemini in
+Firefox. The launcher opens the provider only after confirmation. It does not
+attach local lessons, notes or documents. Provider accounts and services are
+managed by their respective providers.
 
-- Simple Start menu: Internet, Files, Write, Network, Sound, Help, Restart, Power off.
-- Super opens Start, Super+E opens Files, Super+B opens Firefox, Alt+Tab switches apps.
-- Power commands call `sudo -n systemctl poweroff/reboot`. `noeject` removes the live
-  medium removal prompt. Tests require the virtual machine to actually exit on shutdown.
-- Tap anywhere for left-click, two-finger tap for right-click, two-finger scrolling.
-- Three-finger left/right swipes switch applications; four-finger up/down swipes
-  change volume. Existing physical left/right buttons keep their default behavior.
-  Four-finger operation requires hardware/driver support. Physical gestures cannot
-  be certified by a VM; no promise is made for old two-contact touchpads.
-- Firefox is preinstalled. The launcher selects small content-process pools and
-  cache sizes based on RAM/CPU, avoids disk cache/prefetch/background studies, reduces
-  animation, and blocks unsolicited autoplay. Site isolation, sandboxing, TLS and
-  Safe Browsing remain at Firefox defaults. No universal speed multiplier is claimed.
-  Preferences are written to `~/.mozilla/firefox/relife/user.js` and hardware decisions
-  are recorded in `relife-hardware.json`. Modern isolated sites may create additional
-  processes beyond the nominal pool; these are not a hard total-process or RAM cap.
+Both images include a separate local stdio MCP server. Configure a compatible
+client to run `/usr/local/bin/relife-mcp` with additional repeated `--allow`
+arguments for the tools you want to expose:
 
-## Memory, boot and validation
+- `education.search_library` searches only the bundled, public lesson data.
+- `education.get_lesson` reads a bundled lesson by its public ID.
+- `education.convert_units` converts supported length, mass and time units.
 
-The original 700,000,000-byte idle target includes the compressed system copied
-into RAM. Firefox's files add to that image even when the browser is closed, and
-an open browser uses additional RAM. This revision must be measured afresh.
-Do not reuse v0.1.0's measurements as v0.2.0 results.
+With zero permissions, discovery returns zero tools. The server exposes no
+network listener, user-file access, code execution or writes. The AI web links
+and the local MCP server are separate entry points. The browser launchers
+do not connect the provider to MCP.
 
-CI records separate desktop-idle and browser-open samples, both
-MemTotal minus MemAvailable and the stricter MemTotal minus MemFree. It captures
-real desktop/browser screenshots and checks BIOS, UEFI and actual ACPI shutdown.
-A boot/shutdown pass does not imply that the memory target passed. Consult
-`dist/VALIDATION.json` and serial logs in the validation artifact.
+## Build and validate
 
-`toram=filesystem.squashfs`, no persistence, no physical-disk swap and volatile
-journals remain configured. No internal disks are attached in VM tests.
-Physical hardware shutdown, touchpad gestures, disk-swap exclusion with an attached
-disk, Wi-Fi/graphics firmware, live-media removal and memory pressure require tests.
-Automatic firmware bundles remain disabled to control RAM image size.
+On disposable Debian 13, install `live-build debootstrap xorriso squashfs-tools
+isolinux syslinux-common grub-pc-bin grub-efi-amd64-bin grub-common dosfstools
+mtools curl ca-certificates`. Run `sudo bash build.sh extreme-lite` or
+`sudo bash build.sh education`. The corresponding ISO and SHA-256 digest are
+written to `dist/<edition>/`.
 
-User data is volatile unless explicitly exported. Student login is `student` with
-the standard live password `live`; tty1 logs in automatically. No Windows installer
-or USB-free installation is included. No validated v0.2.0 release exists until its
-build/test evidence is published. See historical v0.1.0 results in `VALIDATION.md`.
+On a Debian host with QEMU, OVMF and Pillow run `python3 tests/boot.py
+extreme-lite --ram 1024` or `python3 tests/boot.py education --ram 2048`.
+CI captures BIOS and UEFI graphics, checks the desktop and Education Center
+with networking disconnected, and verifies shutdown. The Extreme Lite gate
+checks both idle RAM metrics against 700,000,000 bytes. The result JSON states
+the VM RAM allocation and both metrics. There is a separate FAT32 boot test.
+Historical measurements remain in [VALIDATION.md](VALIDATION.md).
+
+For the Windows USB-free UEFI flow, see [Windows Boot Setup](windows/README.md).
+The image uses unsigned amd64 EFI boot code. Physical firmware, Wi-Fi and
+touchpad support depend on the device. Student login on the live console is
+`student` with password `live`.
+
+Project scripts and assets are GPL-3.0-only. Bundled Debian packages retain
+their original licenses.

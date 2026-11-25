@@ -1,7 +1,10 @@
 #!/bin/sh
 xsetroot -solid '#1677b8'
 pcmanfm --desktop --profile ReLife >/tmp/relife-desktop.log 2>&1 &
-pulseaudio --start --exit-idle-time=60 >/tmp/relife-audio.log 2>&1
-nm-applet >/tmp/relife-network.log 2>&1 &
-touchegg >/tmp/relife-gestures.log 2>&1 &
-xdg-settings set default-web-browser relife-firefox.desktop >/dev/null 2>&1 || true
+if command -v pulseaudio >/dev/null; then
+  pulseaudio --start --exit-idle-time=60 >/tmp/relife-audio.log 2>&1
+fi
+if command -v nm-applet >/dev/null; then
+  nm-applet >/tmp/relife-network.log 2>&1 &
+fi
+command -v firefox-esr >/dev/null && xdg-settings set default-web-browser relife-firefox.desktop >/dev/null 2>&1 || true

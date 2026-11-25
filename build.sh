@@ -38,12 +38,9 @@ wpasupplicant
 iproute2
 ca-certificates
 alsa-utils
-pulseaudio
-pavucontrol
-network-manager-gnome
 mousepad
 bc
-mupdf
+xpdf
 xdg-utils
 xdotool
 python3
@@ -52,7 +49,12 @@ curl
 sudo
 PKG
 if [ "$edition" = education ]; then
-  echo firefox-esr >> config/package-lists/relife.list.chroot
+  cat >> config/package-lists/relife.list.chroot <<'PKG'
+firefox-esr
+pulseaudio
+pavucontrol
+network-manager-gnome
+PKG
 fi
 mkdir -p config/bootloaders/grub-pc
 cat > config/bootloaders/grub-pc/config.cfg <<'GRUB'
@@ -92,6 +94,14 @@ if [ "$edition" = extreme-lite ]; then
   skel=config/includes.chroot/etc/skel
   rm -f "$skel/Desktop/internet.desktop" config/includes.chroot/usr/share/applications/relife-firefox.desktop
   sed -i '/relife-firefox/d' "$skel/.icewm/"{menu,toolbar,keys}
+  sed -i -e 's/nm-connection-editor/xterm -e nmtui/' -e 's/pavucontrol/xterm -e alsamixer/' "$skel/.icewm/"{menu,toolbar}
+  cat > config/hooks/live/0910-locales.hook.chroot <<'LOCALES'
+#!/bin/sh
+set -eu
+find /usr/share/locale -mindepth 1 -maxdepth 1 \
+  ! -name 'az*' ! -name 'en*' ! -name 'locale.alias' -exec rm -rf -- {} +
+LOCALES
+  chmod +x config/hooks/live/0910-locales.hook.chroot
 fi
 cat > config/hooks/live/0200-firefox.hook.chroot <<'GESTURES'
 #!/bin/sh
