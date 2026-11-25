@@ -1,0 +1,32 @@
+name: Build ReLife RAM ISO
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    container:
+      image: debian:13
+      options: --privileged
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install build and test tools
+        run: apt-get update && apt-get install -y live-build debootstrap xorriso squashfs-tools isolinux syslinux-common grub-pc-bin grub-efi-amd64-bin dosfstools mtools ca-certificates qemu-system-x86 ovmf python3
+      - name: Build hybrid ISO
+        run: bash build.sh 2>&1 | tee build.log
+        shell: bash --noprofile --norc -eo pipefail {0}
+      - name: QEMU BIOS and UEFI desktop probes
+        run: python3 tests/boot.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: relife-ram-amd64
+          path: |
+            dist/
+            build.log
+          if-no-files-found: error
+          retention-days: 14
