@@ -75,6 +75,8 @@ as_student pcmanfm --profile ReLife /home/student >/tmp/relife-files.log 2>&1 &
 sleep 3
 echo RELIFE_FILES_END
 sleep 4
+files_window=$(as_student xdotool search --onlyvisible --name '^student$' | head -1)
+[ -z "$files_window" ] || as_student xdotool windowactivate --sync "$files_window"
 before_switch=$(as_student xdotool getactivewindow)
 as_student relife-desktop switch right >/tmp/relife-switcher.log 2>&1 &
 for n in $(seq 1 10); do
@@ -111,6 +113,10 @@ if [ -n "$browser_window" ]; then echo RELIFE_BROWSER_OK; else cat /tmp/relife-b
 awk '/MemTotal:/{t=$2} /MemFree:/{f=$2} /MemAvailable:/{a=$2} END {printf "BROWSER_RAW_BYTES=%.0f\nBROWSER_AVAILABLE_BYTES=%.0f\n",(t-f)*1024,(t-a)*1024}' /proc/meminfo
 echo RELIFE_BROWSER_END
 sleep 5
+if [ -n "$browser_window" ]; then
+  as_student xdotool windowactivate --sync "$browser_window"
+  as_student xdotool key alt+F4
+fi
 fi
 # Open the new taskbar Start panel and use its power action.
 height=$(as_student xdotool getdisplaygeometry | awk '{print $2}')

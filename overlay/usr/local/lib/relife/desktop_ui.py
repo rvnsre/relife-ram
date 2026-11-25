@@ -25,8 +25,11 @@ def window_list():
     windows = []
     for window_id in reversed(candidates):
         info = command("xprop", "-notype", "-id", window_id,
-                       "_NET_WM_NAME", "WM_NAME", "_NET_WM_DESKTOP", "_NET_WM_STATE")
-        if info.returncode or "_NET_WM_STATE_SKIP_TASKBAR" in info.stdout:
+                       "_NET_WM_NAME", "WM_NAME", "_NET_WM_DESKTOP",
+                       "_NET_WM_STATE", "_NET_WM_WINDOW_TYPE")
+        if info.returncode or any(kind in info.stdout for kind in (
+            "_NET_WM_STATE_SKIP_TASKBAR", "_NET_WM_WINDOW_TYPE_DESKTOP", "_NET_WM_WINDOW_TYPE_DOCK"
+        )):
             continue
         desktop = re.search(r"^_NET_WM_DESKTOP = (\d+)", info.stdout, re.M)
         if desktop and current_desktop and desktop[1] not in (current_desktop, "4294967295"):
