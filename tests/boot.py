@@ -93,11 +93,17 @@ else
   cat /tmp/relife-switcher.log
 fi
 if command -v firefox-esr >/dev/null; then
-as_student relife-firefox file:///usr/share/relife/start.html >/tmp/relife-browser.log 2>&1 &
-sleep 30
+as_student xdotool search --onlyvisible --name '^ReLife.*T' windowclose
+as_student xdotool search --onlyvisible --name '^student$' windowclose
+as_student relife-firefox http://10.0.2.2:RELIFE_TEST_PORT/browser >/tmp/relife-browser.log 2>&1 &
+for n in $(seq 1 90); do
+  browser_window=$(as_student xdotool search --onlyvisible --name '^ReLife Network Probe' | head -1)
+  [ -z "$browser_window" ] || break
+  sleep 1
+done
 echo RELIFE_BROWSER_BEGIN
 pgrep -a firefox-esr
-if pgrep -x firefox-esr >/dev/null; then echo RELIFE_BROWSER_OK; else cat /tmp/relife-browser.log; fi
+if [ -n "$browser_window" ]; then echo RELIFE_BROWSER_OK; else cat /tmp/relife-browser.log; fi
 awk '/MemTotal:/{t=$2} /MemFree:/{f=$2} /MemAvailable:/{a=$2} END {printf "BROWSER_RAW_BYTES=%.0f\nBROWSER_AVAILABLE_BYTES=%.0f\n",(t-f)*1024,(t-a)*1024}' /proc/meminfo
 echo RELIFE_BROWSER_END
 sleep 5
@@ -105,10 +111,19 @@ fi
 # Open the new taskbar Start panel and use its power action.
 height=$(as_student xdotool getdisplaygeometry | awk '{print $2}')
 as_student xdotool mousemove 15 "$((height - 17))" click 1
-sleep 3
-echo RELIFE_START_END
-sleep 2
-as_student xdotool key alt+p
+for n in $(seq 1 10); do
+  start_window=$(as_student xdotool search --onlyvisible --class '^RelifeStart$' | head -1)
+  [ -z "$start_window" ] || break
+  sleep 1
+done
+if [ -n "$start_window" ]; then
+  echo RELIFE_START_END
+  sleep 3
+  geometry=$(as_student xdotool getwindowgeometry --shell "$start_window")
+  x=$(printf '%s\n' "$geometry" | sed -n 's/^X=//p')
+  width=$(printf '%s\n' "$geometry" | sed -n 's/^WIDTH=//p')
+  as_student xdotool mousemove "$((x + width - 90))" "$((height - 77))" click 1
+fi
 for n in $(seq 1 15); do
   power_window=$(as_student xdotool search --onlyvisible --class '^RelifePower$' | head -1)
   [ -z "$power_window" ] || break
@@ -147,8 +162,15 @@ def screenshot(sock_path, target):
 class NetworkProbe(BaseHTTPRequestHandler):
     def do_GET(self):
         self.send_response(200)
+        if self.path == "/browser":
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            response = b"<!doctype html><title>ReLife Network Probe</title><p>Network OK</p>"
+        else:
+            self.send_header("Content-Type", "text/plain; charset=utf-8")
+            response = b"relife-network-ok\n"
+        self.send_header("Content-Length", str(len(response)))
         self.end_headers()
-        self.wfile.write(b"relife-network-ok\n")
+        self.wfile.write(response)
 
 
 def boot(mode):
@@ -248,7 +270,7 @@ def boot(mode):
 results = [boot("uefi-fat32")] if args.disk else [boot("bios"), boot("uefi")]
 report = "VALIDATION-WINDOWS-UEFI.json" if args.disk else "VALIDATION.json"
 (OUT / report).write_text(json.dumps({'edition': args.edition, 'ram_mib': args.ram, 'hard_disks': int(bool(args.disk)), 'results': results,
-    'limitations': ['Physical touchpad gestures require hardware validation.', 'Networking test checks DHCP and local HTTP through QEMU; physical Wi-Fi, captive portals and public internet are separate.']}, indent=2))
+    'limitations': ['Physical touchpad gestures require hardware validation.', 'Networking test checks DHCP and HTTP in Firefox through QEMU. Physical Wi-Fi, captive portals and public internet need separate validation.']}, indent=2))
 required = ["desktop", "education", "toram", "no_swap", "shutdown"]
 required += ["firefox", "gesture_services", "network", "switcher"]
 raise SystemExit(0 if all(all(result[key] for key in required) for result in results) else 1)

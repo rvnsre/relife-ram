@@ -85,7 +85,8 @@ def start():
     ttk.Button(footer, text="Kompüteri söndür", command=power).pack(side="right")
     root.bind("<Alt-p>", lambda event: power())
     place(root, x=4, bottom=True)
-    root.after_idle(root.focus_force)
+    root.wait_visibility()
+    root.focus_force()
     root.bind("<FocusOut>", lambda event: root.after_idle(
         lambda: root.destroy() if root.focus_displayof() is None else None))
     root.mainloop()
@@ -95,7 +96,7 @@ def switch(direction):
     existing = command("xdotool", "search", "--onlyvisible", "--class", "^RelifeSwitcher$")
     if existing.stdout.strip():
         window = existing.stdout.splitlines()[0]
-        command("wmctrl", "-ia", hex(int(window)))
+        command("xdotool", "windowactivate", "--sync", window)
         if direction:
             command("xdotool", "key", "Right" if direction == "right" else "Left")
         return
@@ -176,11 +177,11 @@ def network():
         except (OSError, subprocess.TimeoutExpired):
             status.set("Şəbəkə xidməti cavab vermədi.")
             return
-        devices = [line.split(":", 1) for line in result.stdout.splitlines()]
+        devices = [line.split(":", 1) for line in result.stdout.splitlines() if ":" in line]
         adapters = [state for kind, state in devices if kind in ("wifi", "ethernet")]
         if result.returncode:
             text = "Şəbəkə xidmətinə qoşulmaq mümkün olmadı."
-        elif "connected" in adapters:
+        elif any(state.startswith("connected") for state in adapters):
             text = "Şəbəkəyə qoşulub. İnternet açılmırsa, giriş səhifəsini yoxla."
         elif any(kind == "wifi" and state != "unavailable" for kind, state in devices):
             text = "Wi-Fi şəbəkəsi seç və tələb olunarsa parolu daxil et."

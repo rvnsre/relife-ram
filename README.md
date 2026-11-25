@@ -78,3 +78,15 @@ gestures require a touchpad that reports the corresponding contact count.
 Use **Başla → Kompüteri söndür → Söndür** for normal systemd poweroff.
 The CI test activates the same graphical dialog and verifies that the VM
 exits. Firmware and ACPI on physical computers must be tested separately.
+
+## Network and window selection
+
+Select **Şəbəkə** from the taskbar or Start and open **Şəbəkə seç** to
+connect to Wi-Fi or to a wired profile. The network panel also provides a
+shortcut to open the network's sign-in page. For a supported touchpad, swipe
+three fingers left or right to open **Açıq pəncərələr**. Swipe again to highlight
+a different window, and select **Keç**, press Enter or double-click the window's
+name. **Super+Tab** and **Başla → Açıq pəncərələr** open the same picker.
+
+See [the browser baseline](docs/audit/BROWSER.md) for the online VM test and
+the remaining physical-device checks.
