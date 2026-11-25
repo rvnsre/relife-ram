@@ -1,5 +1,6 @@
 """Small, on-demand X11 Start panel, task picker and network panel."""
 import os
+import re
 import subprocess
 import sys
 import tkinter as tk
@@ -16,13 +17,22 @@ def launch(*args):
     subprocess.Popen(args, start_new_session=True)
 
 
-def window_list(rows, desktop):
+def window_list():
+    listing = command("xprop", "-root", "_NET_CLIENT_LIST_STACKING", "_NET_CLIENT_LIST")
+    lines = [line for line in listing.stdout.splitlines() if "window id #" in line]
+    candidates = re.findall(r"0x[0-9a-f]+", lines[0]) if lines else []
+    current_desktop = command("xdotool", "get_desktop").stdout.strip()
     windows = []
-    for row in rows.splitlines():
-        fields = row.split(maxsplit=4)
-        if len(fields) >= 4 and fields[1] in (desktop, "-1"):
-            window_id, _, _, window_class, *title = fields
-            windows.append((window_id, title[0] if title else window_class))
+    for window_id in reversed(candidates):
+        info = command("xprop", "-notype", "-id", window_id,
+                       "_NET_WM_NAME", "WM_NAME", "_NET_WM_DESKTOP", "_NET_WM_STATE")
+        if info.returncode or "_NET_WM_STATE_SKIP_TASKBAR" in info.stdout:
+            continue
+        desktop = re.search(r"^_NET_WM_DESKTOP = (\d+)", info.stdout, re.M)
+        if desktop and current_desktop and desktop[1] not in (current_desktop, "4294967295"):
+            continue
+        title = re.search(r'^(_NET_WM_NAME|WM_NAME) = "(.*)"$', info.stdout, re.M)
+        windows.append((window_id, title[2] if title else "Adsız pəncərə"))
     return windows
 
 
@@ -101,8 +111,7 @@ def switch(direction):
             command("xdotool", "key", "Right" if direction == "right" else "Left")
         return
     active = command("xdotool", "getactivewindow").stdout.strip()
-    desktop = command("xdotool", "get_desktop").stdout.strip()
-    windows = window_list(command("wmctrl", "-lx").stdout, desktop)
+    windows = window_list()
     root = panel("RelifeSwitcher", "Açıq pəncərələr")
     root.attributes("-topmost", True)
     root.wm_attributes("-type", "dialog")
@@ -141,7 +150,7 @@ def switch(direction):
         if row:
             window_id = windows[row[0]][0]
             root.destroy()
-            command("wmctrl", "-ia", window_id)
+            command("xdotool", "windowactivate", window_id)
         return "break"
 
     selected = next((i for i, (wid, _) in enumerate(windows) if str(int(wid, 16)) == active), 0)

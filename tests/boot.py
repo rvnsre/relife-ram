@@ -75,6 +75,7 @@ as_student pcmanfm --profile ReLife /home/student >/tmp/relife-files.log 2>&1 &
 sleep 3
 echo RELIFE_FILES_END
 sleep 4
+before_switch=$(as_student xdotool getactivewindow)
 as_student relife-desktop switch right >/tmp/relife-switcher.log 2>&1 &
 for n in $(seq 1 10); do
   switch_window=$(as_student xdotool search --onlyvisible --class '^RelifeSwitcher$' | head -1)
@@ -87,8 +88,11 @@ if [ -n "$switch_window" ]; then
   as_student xdotool windowactivate --sync "$switch_window"
   as_student xdotool key Return
   sleep 2
-  current=$(as_student xdotool getactivewindow getwindowname)
-  case "$current" in student|ReLife*) echo RELIFE_SWITCHER_OK ;; esac
+  selected=$(as_student xdotool getactivewindow)
+  current=$(as_student xdotool getwindowname "$selected")
+  if [ "$selected" != "$before_switch" ]; then
+    case "$current" in student|ReLife*) echo RELIFE_SWITCHER_OK ;; esac
+  fi
 else
   cat /tmp/relife-switcher.log
 fi

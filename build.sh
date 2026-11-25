@@ -40,6 +40,7 @@ firmware-realtek
 firmware-iwlwifi
 firmware-atheros
 wpasupplicant
+wireless-regdb
 iproute2
 ca-certificates
 firefox-esr
@@ -52,7 +53,7 @@ bc
 xpdf
 xdg-utils
 xdotool
-wmctrl
+x11-utils
 python3
 python3-tk
 curl
