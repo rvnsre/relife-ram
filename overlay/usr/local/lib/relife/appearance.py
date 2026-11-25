@@ -31,6 +31,10 @@ def configure(root):
     style.configure("Caption.TLabel", background=BACKGROUND, foreground=MUTED)
     style.configure("Header.TLabel", background="#183246", foreground="#f1faff",
                     padding=(18, 9), font=("DejaVu Sans", 16, "bold"))
+    style.configure("Practice.TFrame", background="#e7f1f2")
+    style.configure("Practice.TLabel", background="#e7f1f2")
+    style.configure("PracticeHeading.TLabel", background="#e7f1f2", font=("DejaVu Sans", 12, "bold"))
+    style.configure("Section.TLabel", font=("DejaVu Sans", 12, "bold"), padding=(0, 0, 0, 6))
     style.configure("TEntry", padding=(7, 4), insertcolor=INK)
     style.configure("TCombobox", padding=(6, 3))
     style.map("TCombobox", fieldbackground=[("readonly", "#ffffff")],

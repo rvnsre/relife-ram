@@ -103,9 +103,27 @@ def theme_assets(theme):
                                ("toolbuttonbg", "#101F2D", "#101F2D")):
         xpm(taskbar / f"{name}.xpm", 1, 32, {".": base, "-": stripe},
             lambda x, y: "-" if y == 31 and name == "taskbuttonactive" or y == 0 and name == "taskbarbg" else ".")
-    xpm(taskbar / "icewm.xpm", 34, 30, {" ": "None", "a": "#66E0C8", "w": "#EAFBFF"},
-        lambda x, y: "a" if 8 <= y <= 19 and (9 <= x <= 21 and abs(x - y - 2) <= 1) else
-        "w" if 8 <= y <= 19 and (13 <= x <= 25 and abs(x + y - 31) <= 1) else " ")
+    # The label is baked into the small IceWM start-button pixmap.
+    label = (
+        "███               █     ",
+        "█  █              █     ",
+        "███    ██   ███   █  ██ ",
+        "█  █     █  █     █    █",
+        "█  █   ███   ██   █  ███",
+        "█  █  █  █     █  █ █  █",
+        "███    ███  ███   █  ███",
+        "              █         ",
+    )
+
+    def start(x, y):
+        if 11 <= x <= 23 and 8 <= y <= 22:
+            if abs(x - 16 - (6 - abs(y - 15))) <= 1:
+                return "a"
+        if 33 <= x < 81 and 7 <= y < 23 and label[(y - 7) // 2].ljust(24)[(x - 33) // 2] == "█":
+            return "w"
+        return " "
+
+    xpm(taskbar / "icewm.xpm", 92, 30, {" ": "None", "a": "#66E0C8", "w": "#EAFBFF"}, start)
 
 
 def main():

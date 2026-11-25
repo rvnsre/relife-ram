@@ -4,6 +4,7 @@ Look=pixmap
 RolloverButtonsSupported=1
 TitleBarHeight=32
 TitleBarJustify=0
+TitleBarHorzOffset=10
 TitleButtonsLeft=""
 TitleButtonsRight="xmi"
 TitleButtonsSupported="xmi"

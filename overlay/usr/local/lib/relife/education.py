@@ -46,7 +46,8 @@ class Education:
             current.configure(size=min(18, max(10, current.cget("size") + delta)))
 
     def entry(self, parent, label, value=""):
-        ttk.Label(parent, text=label).pack(anchor="w")
+        label_style = "Practice.TLabel" if parent.cget("style") == "Practice.TFrame" else "TLabel"
+        ttk.Label(parent, text=label, style=label_style).pack(anchor="w")
         entry = ttk.Entry(parent)
         entry.insert(0, value)
         entry.pack(fill="x", pady=(2, 7))
@@ -92,12 +93,27 @@ class Education:
         query = self.entry(pane, "Mövzu və ya fənn axtar")
         selector = ttk.Combobox(pane, state="readonly")
         selector.pack(fill="x", pady=(0, 7))
-        text = self.output(pane)
+        content = ttk.Frame(pane)
+        content.pack(fill="both", expand=True, pady=(6, 0))
+        content.columnconfigure(0, weight=3)
+        content.columnconfigure(1, weight=2, minsize=220)
+        content.rowconfigure(0, weight=1)
+        lesson = ttk.Frame(content)
+        lesson.grid(row=0, column=0, sticky="nsew", padx=(0, 13))
+        practice = ttk.Frame(content, padding=12, style="Practice.TFrame")
+        practice.grid(row=0, column=1, sticky="nsew")
+        ttk.Label(lesson, text="Dərsin izahı", style="Section.TLabel").pack(anchor="w")
+        text = self.output(lesson)
+        ttk.Label(practice, text="Biliyini yoxla", style="PracticeHeading.TLabel").pack(anchor="w")
         question = tk.StringVar()
-        ttk.Label(pane, textvariable=question, wraplength=550).pack(anchor="w")
-        attempt = self.entry(pane, "Cavabın")
+        ttk.Label(practice, textvariable=question, wraplength=195, style="Practice.TLabel").pack(
+            anchor="w", fill="x", pady=(9, 8)
+        )
+        attempt = self.entry(practice, "Cavabın")
         result = tk.StringVar()
-        ttk.Label(pane, textvariable=result, wraplength=550).pack(anchor="w", pady=(3, 0))
+        ttk.Label(practice, textvariable=result, wraplength=195, style="Practice.TLabel").pack(
+            anchor="w", fill="x", pady=(3, 0)
+        )
         visible = []
 
         def selected(event=None):
@@ -129,7 +145,9 @@ class Education:
         selector.bind("<<ComboboxSelected>>", selected)
         query.bind("<KeyRelease>", filter_catalog)
         attempt.bind("<Return>", lambda event: check())
-        self.actions(pane, ("Cavabı yoxla", check))
+        ttk.Button(practice, text="Cavabı yoxla", command=check, style="Primary.TButton").pack(
+            anchor="w", pady=(6, 0)
+        )
         filter_catalog()
 
     def flashcards(self, pane):
