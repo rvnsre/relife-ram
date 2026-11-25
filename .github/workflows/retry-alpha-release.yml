@@ -9,12 +9,13 @@ permissions:
   contents: write
 concurrency: relife-alpha-release-recovery
 env:
-  RUN_ID: '45645538564'
-  SOURCE_SHA: cc20ef5af8f04c809a68927e8438cfa4c0603235
-  TAG_NAME: v0.3.0-alpha.3
+  RUN_ID: '45692830893'
+  SOURCE_SHA: 710be3544b680fcbf4e686e87fdee0839fffb4bf
+  TAG_NAME: v0.3.0-alpha.4
 jobs:
   publish:
     runs-on: ubuntu-24.04
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
         with:
@@ -24,6 +25,14 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           test "$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$RUN_ID" --jq .head_sha)" = "$SOURCE_SHA"
+          while :; do
+            result=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$RUN_ID" --jq '[.status,.conclusion] | @tsv')
+            if [[ "$result" == completed$'\t'* ]]; then
+              [[ "$result" == completed$'\t'success ]]
+              break
+            fi
+            sleep 20
+          done
           gh api "repos/$GITHUB_REPOSITORY/actions/runs/$RUN_ID/jobs" |
             jq -e '["build (extreme-lite)", "build (education)", "windows"] - [.jobs[] | select(.conclusion == "success") | .name] | length == 0'
       - uses: actions/download-artifact@v4
@@ -60,7 +69,16 @@ jobs:
           cp "$lite/bios-desktop.png" release/ReLife-Desktop.png
           cp "$lite/bios-education.png" release/ReLife-Education-Center.png
           cp "$lite/bios-files.png" release/ReLife-Files.png
+          cp "$lite/bios-start.png" release/ReLife-Start.png
+          cp "$lite/bios-switcher.png" release/ReLife-Window-Switcher.png
           (cd release && sha256sum *.iso *.exe *.zip > SHA256SUMS)
+          cat > /tmp/relife-release-notes.md <<'NOTES'
+          ReLife RAM Alpha 4 ships Extreme Lite and Education live ISOs with a tiled Start menu, a Wi-Fi panel and a visible three-finger window picker.
+
+          Extreme Lite starts Firefox ESR on the 1 GiB BIOS and UEFI test VMs. It uses compressed memory on those machines without disk swap. The attached validation reports include idle RAM, the Firefox network-page test and graphical shutdown. Virtual Ethernet is tested. Physical Wi-Fi and touchpad support still depend on the device.
+
+          Extreme Lite focuses on older Wi-Fi adapters. Education includes the broader firmware bundle. Windows Boot Setup stages the UEFI payload on a dedicated FAT32 volume. See the repository's Windows README for installation and recovery steps.
+          NOTES
           lookup() {
             gh api --paginate "repos/$GITHUB_REPOSITORY/releases" --jq ".[] | select(.tag_name == \"$TAG_NAME\")" | jq -sc 'first // empty'
           }
@@ -69,7 +87,7 @@ jobs:
             if [ -n "$release_info" ]; then break; fi
             if release_info=$(gh api "repos/$GITHUB_REPOSITORY/releases" -X POST \
               -f tag_name="$TAG_NAME" -f target_commitish="$SOURCE_SHA" \
-              -f name='ReLife RAM v0.3.0 Alpha 3' -f body=@RELEASE-NOTES.md \
+              -f name='ReLife RAM v0.3.0 Alpha 4' -f body=@/tmp/relife-release-notes.md \
               -F draft=true -F prerelease=true); then break; fi
             sleep "$((attempt * 5))"
             release_info=$(lookup)
@@ -78,8 +96,10 @@ jobs:
           release_id=$(jq -r .id <<<"$release_info")
           upload_template=$(jq -r .upload_url <<<"$release_info")
           upload_url=${upload_template%%\{*}
-          for asset in release/*; do
+          for asset in release/*.json release/*.png release/*.exe release/SHA256SUMS \
+                       release/ReLife-Extreme-Lite-*.iso release/*.zip release/ReLife-Education-*.iso; do
             name=${asset##*/}
+            printf 'Checking release asset %s\n' "$name"
             hash=$(sha256sum "$asset" | cut -d ' ' -f1)
             for attempt in 1 2 3; do
               digest=$(gh api "repos/$GITHUB_REPOSITORY/releases/$release_id/assets" \
