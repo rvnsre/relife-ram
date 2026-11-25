@@ -17,6 +17,7 @@ x11-xserver-utils
 keyboard-configuration
 linux-image-amd64
 systemd-sysv
+xserver-xorg
 xserver-xorg-core
 xserver-xorg-input-libinput
 xserver-xorg-video-vesa
@@ -55,7 +56,7 @@ for unit in swap.target sleep.target suspend.target hibernate.target hybrid-slee
 done
 cat > config/includes.chroot/etc/skel/.bash_profile <<'PROFILE'
 if [ -z "${DISPLAY:-}" ] && [ "$(tty)" = /dev/tty1 ]; then
-  exec startx
+  exec startx >> "$HOME/.relife-x.log" 2>&1
 fi
 PROFILE
 cat > config/includes.chroot/etc/systemd/system/relife-probe.service <<'SERVICE'
@@ -78,7 +79,7 @@ cat > config/includes.chroot/usr/local/bin/relife-probe <<'PROBE'
 set -eu
 [ "$(cat /sys/class/dmi/id/product_serial)" = RELIFE_CI ] || exit 0
 for i in $(seq 1 120); do pgrep -x icewm >/dev/null && break; sleep 2; done
-pgrep -x icewm >/dev/null || { echo RELIFE_DESKTOP_FAIL; getent passwd student; journalctl -u getty@tty1 --no-pager; cat /home/student/.local/share/xorg/Xorg.0.log /var/log/Xorg.0.log 2>/dev/null || true; exit 1; }
+pgrep -x icewm >/dev/null || { echo RELIFE_DESKTOP_FAIL; getent passwd student; journalctl -u getty@tty1 --no-pager; cat /home/student/.relife-x.log /home/student/.local/share/xorg/Xorg.0.log /var/log/Xorg.0.log 2>/dev/null || true; exit 1; }
 sleep 60
 echo RELIFE_REPORT_BEGIN
 cat /proc/cmdline
