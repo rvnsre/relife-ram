@@ -1,5 +1,5 @@
 """Boot the actual hybrid ISO with no hard disk and collect serial evidence."""
-import pathlib, subprocess, sys
+import pathlib, subprocess, sys, time
 out = pathlib.Path("dist")
 iso = next(out.glob("*.iso"))
 failed = False
@@ -12,8 +12,17 @@ for mode in ("bios", "uefi"):
         cmd += ["-drive", f"if=pflash,format=raw,readonly=on,file={firmware}"]
     with (out / f"qemu-{mode}.log").open("wb") as log:
         try:
-            result = subprocess.run(cmd, stdout=log, stderr=subprocess.STDOUT, timeout=600)
-            ok = result.returncode == 0
+            proc = subprocess.Popen(cmd, stdout=log, stderr=subprocess.STDOUT)
+            deadline = time.monotonic() + 600
+            while proc.poll() is None and time.monotonic() < deadline:
+                time.sleep(30)
+                tail = (out / f"qemu-{mode}.log").read_text(errors="replace")[-4000:]
+                print(f"{mode} serial tail:\n{tail}", flush=True)
+                if "RELIFE_DESKTOP_FAIL" in tail:
+                    break
+            if proc.poll() is None:
+                proc.kill()
+            ok = proc.wait() == 0
         except subprocess.TimeoutExpired:
             ok = False
     text = (out / f"qemu-{mode}.log").read_text(errors="replace")
