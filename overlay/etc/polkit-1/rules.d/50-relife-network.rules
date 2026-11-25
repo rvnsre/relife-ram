@@ -1,0 +1,8 @@
+// NetworkManager saves a new Wi-Fi connection as a system profile.
+// Grant this action to the active live desktop user, not to remote sessions.
+polkit.addRule(function(action, subject) {
+    if (action.id === "org.freedesktop.NetworkManager.settings.modify.system" &&
+        subject.user === "student" && subject.local && subject.active) {
+        return polkit.Result.YES;
+    }
+});

@@ -201,6 +201,17 @@ def network():
     ttk.Button(box, text="Şəbəkə seç", style="Primary.TButton",
                command=lambda: launch("xterm", "-T", "Wi-Fi və kabel", "-e", "nmtui", "connect")).pack(
                    side="left", padx=(0, 6))
+    def enable_wifi():
+        try:
+            result = command("nmcli", "radio", "wifi", "on")
+            if result.returncode == 0:
+                refresh()
+                return
+        except (OSError, subprocess.TimeoutExpired):
+            pass
+        status.set("Wi-Fi açıla bilmədi. Kompüterdəki Wi-Fi düyməsini yoxla.")
+
+    ttk.Button(box, text="Wi-Fi aç", command=enable_wifi).pack(side="left", padx=(0, 6))
     ttk.Button(box, text="Yenilə", command=refresh).pack(side="left")
     ttk.Button(body, text="Şəbəkənin giriş səhifəsini aç",
                command=lambda: launch("relife-firefox", "http://detectportal.firefox.com/canonical.html")).pack(
