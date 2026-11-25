@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Təhsil mərkəzi
+Name[en]=Education Center
+Exec=relife-education
+Icon=/usr/share/icons/relife/write.xpm
+Categories=Education;
+Terminal=false

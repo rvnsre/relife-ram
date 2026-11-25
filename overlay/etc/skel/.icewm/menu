@@ -1,3 +1,4 @@
+prog "Təhsil mərkəzi" /usr/share/icons/relife/write.xpm relife-education
 prog "İnternet — Firefox" /usr/share/icons/relife/internet.xpm relife-firefox
 prog "Fayllar" /usr/share/icons/relife/files.xpm pcmanfm
 prog "Yazı yaz" /usr/share/icons/relife/write.xpm mousepad

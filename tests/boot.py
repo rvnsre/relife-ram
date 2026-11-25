@@ -1,4 +1,5 @@
 """Actual ISO boot, desktop/browser RAM samples, screenshots and ACPI shutdown."""
+import argparse
 import base64
 import json
 import os
@@ -10,8 +11,12 @@ import subprocess
 import threading
 import time
 
-OUT = Path('dist').resolve()
-ISO = next(OUT.glob('*.iso'))
+parser = argparse.ArgumentParser()
+parser.add_argument("edition", choices=("extreme-lite", "education"))
+parser.add_argument("--ram", type=int, default=2048)
+args = parser.parse_args()
+OUT = Path(f"dist/{args.edition}").resolve()
+ISO, = OUT.glob("*.iso")
 
 GUEST = r'''set +e
 exec >/dev/ttyS0 2>&1
@@ -24,18 +29,35 @@ cat /proc/meminfo
 cat /proc/swaps
 findmnt /run/live/medium
 losetup -l
-dpkg-query -W firefox-esr touchegg
+dpkg-query -W python3-tk mupdf
+findmnt -n -o FSTYPE,OPTIONS /run/live/medium | grep -Eq '^tmpfs[[:space:]]+ro(,|$)' && echo RELIFE_TORAM_OK
+[ "$(wc -l < /proc/swaps)" -eq 1 ] && echo RELIFE_SWAP_OK
 awk '/MemTotal:/{t=$2} /MemFree:/{f=$2} /MemAvailable:/{a=$2} END {printf "IDLE_RAW_BYTES=%.0f\nIDLE_AVAILABLE_BYTES=%.0f\n",(t-f)*1024,(t-a)*1024}' /proc/meminfo
 echo RELIFE_IDLE_END
 sleep 5
-runuser -u student -- env HOME=/home/student DISPLAY=:0 XAUTHORITY=/home/student/.Xauthority relife-firefox file:///usr/share/relife/start.html >/tmp/relife-browser.log 2>&1 &
-sleep 40
+as_student() { runuser -u student -- env HOME=/home/student DISPLAY=:0 XAUTHORITY=/home/student/.Xauthority "$@"; }
+as_student relife-education >/tmp/relife-education.log 2>&1 &
+for n in $(seq 1 20); do
+  window=$(as_student xdotool search --onlyvisible --name 'ReLife.*Təhsil' | head -1)
+  if [ -n "$window" ]; then
+    echo RELIFE_EDUCATION_OK
+    break
+  fi
+  sleep 1
+done
+cat /tmp/relife-education.log
+echo RELIFE_EDUCATION_END
+sleep 4
+if command -v firefox-esr >/dev/null; then
+as_student relife-firefox file:///usr/share/relife/start.html >/tmp/relife-browser.log 2>&1 &
+sleep 30
 echo RELIFE_BROWSER_BEGIN
 pgrep -a firefox-esr
 if pgrep -x firefox-esr >/dev/null; then echo RELIFE_BROWSER_OK; else cat /tmp/relife-browser.log; fi
 awk '/MemTotal:/{t=$2} /MemFree:/{f=$2} /MemAvailable:/{a=$2} END {printf "BROWSER_RAW_BYTES=%.0f\nBROWSER_AVAILABLE_BYTES=%.0f\n",(t-f)*1024,(t-a)*1024}' /proc/meminfo
 echo RELIFE_BROWSER_END
 sleep 5
+fi
 echo RELIFE_SHUTDOWN_REQUEST
 systemctl poweroff
 '''
@@ -63,9 +85,9 @@ def screenshot(sock_path, target):
 def boot(mode):
     log_path = OUT / f'qemu-{mode}.log'
     qmp = Path(f'/tmp/relife-{os.getpid()}-{mode}.sock')
-    cmd = ['qemu-system-x86_64', '-m', '2048', '-smp', '2', '-accel', 'tcg',
+    cmd = ['qemu-system-x86_64', '-m', str(args.ram), '-smp', '2', '-accel', 'tcg',
            '-cdrom', str(ISO), '-boot', 'd', '-display', 'none', '-monitor', 'none',
-           '-serial', 'stdio', '-no-reboot', '-qmp', f'unix:{qmp},server=on,wait=off']
+           '-nic', 'none', '-serial', 'stdio', '-no-reboot', '-qmp', f'unix:{qmp},server=on,wait=off']
     if mode == 'uefi':
         variables = OUT / 'OVMF_VARS.fd'
         shutil.copy('/usr/share/OVMF/OVMF_VARS_4M.fd', variables)
@@ -85,7 +107,7 @@ def boot(mode):
     reader = threading.Thread(target=read, daemon=True)
     reader.start()
     stage = 0
-    seen_idle = seen_browser = False
+    seen_idle = seen_browser = seen_education = False
     deadline = time.monotonic() + 420
     heartbeat = time.monotonic()
     try:
@@ -97,10 +119,17 @@ def boot(mode):
                 proc.stdin.write(b'live\n'); proc.stdin.flush(); stage = 2
             elif stage == 2 and 'student@relife:' in text:
                 encoded = base64.b64encode(GUEST.encode()).decode()
-                proc.stdin.write(f'echo {encoded} | base64 -d | sudo -n bash\n'.encode())
+                for offset in range(0, len(encoded), 700):
+                    redirect = ">" if offset == 0 else ">>"
+                    chunk = encoded[offset:offset + 700]
+                    proc.stdin.write(f"printf %s {chunk} {redirect} /tmp/relife-probe.b64\n".encode())
+                proc.stdin.write(b"base64 -d /tmp/relife-probe.b64 | sudo -n bash\n")
                 proc.stdin.flush(); stage = 3
             if not seen_idle and 'RELIFE_IDLE_END' in text:
                 screenshot(qmp, OUT / f'{mode}-desktop.ppm'); seen_idle = True
+            if not seen_education and 'RELIFE_EDUCATION_END' in text:
+                screenshot(qmp, OUT / f'{mode}-education.ppm')
+                seen_education = True
             if not seen_browser and 'RELIFE_BROWSER_END' in text:
                 screenshot(qmp, OUT / f'{mode}-firefox.ppm'); seen_browser = True
             if time.monotonic() - heartbeat >= 30:
@@ -116,6 +145,8 @@ def boot(mode):
     text = received.decode(errors='replace')
     metrics = {k: int(v) for k, v in re.findall(r'(IDLE_RAW_BYTES|IDLE_AVAILABLE_BYTES|BROWSER_RAW_BYTES|BROWSER_AVAILABLE_BYTES)=(\d+)', text)}
     result = {'mode': mode, 'desktop': seen_idle, 'firefox': 'RELIFE_BROWSER_OK' in text,
+              'education': bool(re.search(r'^RELIFE_EDUCATION_OK\r?$', text, re.M)),
+              'toram': 'RELIFE_TORAM_OK' in text, 'no_swap': 'RELIFE_SWAP_OK' in text,
               'shutdown': code == 0 and 'RELIFE_SHUTDOWN_REQUEST' in text, 'memory': metrics}
     # Memory target is reported separately; a boot pass cannot imply a memory pass.
     result['idle_700mb_available'] = metrics.get('IDLE_AVAILABLE_BYTES', 10**12) <= 700000000
@@ -123,7 +154,9 @@ def boot(mode):
     print(json.dumps(result), flush=True)
     return result
 
-results = [boot('bios'), boot('uefi')]
-(OUT / 'VALIDATION.json').write_text(json.dumps({'ram_mib': 2048, 'hard_disks': 0, 'results': results,
+results = [boot("bios"), boot("uefi")]
+(OUT / 'VALIDATION.json').write_text(json.dumps({'edition': args.edition, 'ram_mib': args.ram, 'hard_disks': 0, 'results': results,
     'limitations': ['Physical touchpad gestures require hardware validation.', 'No real-hardware shutdown, network browsing, media removal or pressure test.']}, indent=2))
-raise SystemExit(0 if all(r['desktop'] and r['firefox'] and r['shutdown'] for r in results) else 1)
+required = ["desktop", "education", "toram", "no_swap", "shutdown"]
+required += ["firefox"] if args.edition == "education" else ["idle_700mb_available", "idle_700mb_raw"]
+raise SystemExit(0 if all(all(result[key] for key in required) for result in results) else 1)

@@ -2,10 +2,16 @@
 set -euo pipefail
 [[ $EUID == 0 ]] || { echo 'Run with sudo on Debian 13'; exit 1; }
 cd "$(dirname "$0")"
-mkdir -p build
-cd build
+edition=${1:-extreme-lite}
+case "$edition" in
+  extreme-lite) name=ReLife-Extreme-Lite ;;
+  education) name=ReLife-Education ;;
+  *) echo 'Usage: build.sh [extreme-lite|education]' >&2; exit 2 ;;
+esac
+mkdir -p "build/$edition"
+cd "build/$edition"
 lb clean --purge || true
-lb config --mode debian --distribution trixie --architectures amd64 --binary-image iso-hybrid --bootloaders "syslinux grub-efi" --firmware-chroot false --firmware-binary false --apt-indices false --debootstrap-options "--variant=minbase" --archive-areas 'main contrib non-free-firmware' --apt-recommends false --debian-installer none --memtest none --bootappend-live 'boot=live components toram=filesystem.squashfs noeject nopersistence swap=false username=student hostname=relife locales=C.UTF-8 console=tty0 console=ttyS0,115200n8' --chroot-squashfs-compression-type xz --uefi-secure-boot disable --iso-volume RELIFE_RAM
+lb config --mode debian --distribution trixie --architectures amd64 --binary-image iso-hybrid --bootloaders "syslinux grub-efi" --firmware-chroot false --firmware-binary false --apt-indices false --debootstrap-options "--variant=minbase" --archive-areas 'main contrib non-free-firmware' --apt-recommends false --debian-installer none --memtest none --bootappend-live 'boot=live components toram=filesystem.squashfs noeject nopersistence swap=false username=student hostname=relife locales=C.UTF-8 console=tty0 console=ttyS0,115200n8' --chroot-squashfs-compression-type xz --checksums none --uefi-secure-boot disable --iso-volume RELIFE_RAM
 mkdir -p config/package-lists config/includes.chroot/etc/systemd/journald.conf.d config/includes.chroot/etc/skel config/includes.chroot/usr/local/bin config/hooks/live
 cat > config/package-lists/relife.list.chroot <<'PKG'
 live-boot
@@ -31,20 +37,29 @@ network-manager
 wpasupplicant
 iproute2
 ca-certificates
-firefox-esr
 alsa-utils
 pulseaudio
 pavucontrol
 network-manager-gnome
 mousepad
 bc
-xpdf
+mupdf
 xdg-utils
 xdotool
 python3
+python3-tk
 curl
 sudo
 PKG
+if [ "$edition" = education ]; then
+  echo firefox-esr >> config/package-lists/relife.list.chroot
+fi
+mkdir -p config/bootloaders/grub-pc
+cat > config/bootloaders/grub-pc/config.cfg <<'GRUB'
+set default=0
+set timeout=5
+terminal_output console
+GRUB
 cat > config/includes.chroot/etc/skel/.xinitrc <<'X'
 exec icewm-session
 X
@@ -72,14 +87,20 @@ if [ -z "${DISPLAY:-}" ] && [ "$(tty)" = /dev/tty1 ]; then
 fi
 PROFILE
 # Project-owned lightweight UI, browser profile and touchpad settings.
-cp -a ../overlay/. config/includes.chroot/
-cat > config/hooks/live/0200-touchegg.hook.chroot <<'GESTURES'
+cp -a ../../overlay/. config/includes.chroot/
+if [ "$edition" = extreme-lite ]; then
+  skel=config/includes.chroot/etc/skel
+  rm -f "$skel/Desktop/internet.desktop" config/includes.chroot/usr/share/applications/relife-firefox.desktop
+  sed -i '/relife-firefox/d' "$skel/.icewm/"{menu,toolbar,keys}
+fi
+cat > config/hooks/live/0200-firefox.hook.chroot <<'GESTURES'
 #!/bin/sh
 set -eu
+test ! -x /usr/bin/firefox-esr && exit 0
 mkdir -p /usr/lib/firefox-esr/distribution
 ln -sf /etc/firefox/policies/policies.json /usr/lib/firefox-esr/distribution/policies.json
 GESTURES
-chmod +x config/hooks/live/0200-touchegg.hook.chroot
+chmod +x config/hooks/live/0200-firefox.hook.chroot
 cat > config/hooks/live/0900-trim.hook.chroot <<'TRIM'
 #!/bin/sh
 set -eu
@@ -95,12 +116,12 @@ chmod +x config/hooks/live/0900-trim.hook.chroot
 cat > config/hooks/live/0999-timeout.hook.binary <<'MENU'
 #!/bin/sh
 set -eu
-find . -type f -name '*.cfg' -exec sed -i -e 's/^timeout .*/timeout 50/' -e 's/^set timeout=.*/set timeout=5/' {} +
+sed -i 's/^timeout .*/timeout 50/' isolinux/isolinux.cfg
 MENU
 chmod +x config/hooks/live/0999-timeout.hook.binary
 lb build
-mkdir -p ../dist
-cp live-image-amd64.hybrid.iso ../dist/ReLife-Extreme-Lite-x86_64.iso
-cp chroot/var/lib/dpkg/status ../dist/package-status.txt
-cd ../dist
-sha256sum *.iso > SHA256SUMS
+out="../../dist/$edition"
+mkdir -p "$out"
+cp live-image-amd64.hybrid.iso "$out/$name-x86_64.iso"
+cp chroot/var/lib/dpkg/status "$out/package-status.txt"
+(cd "$out" && sha256sum "$name-x86_64.iso" > SHA256SUMS)

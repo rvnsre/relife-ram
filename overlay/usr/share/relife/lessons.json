@@ -1,0 +1,38 @@
+[
+  {
+    "id": "fractions", "subject": "Riyaziyyat", "title": "Kəsrlərin toplanması",
+    "text": "Məxrəcləri eyni olan kəsrləri topladıqda yalnız surətləri toplayırıq. Məxrəclər fərqlidirsə, əvvəlcə ortaq məxrəc tapırıq. Məsələn, 1/3 + 1/6 = 2/6 + 1/6 = 1/2.",
+    "question": "1/4 + 1/2 neçədir?", "answer": "3/4",
+    "explanation": "1/2 = 2/4, buna görə 1/4 + 2/4 = 3/4."
+  },
+  {
+    "id": "ohm", "subject": "Fizika", "title": "Om qanunu",
+    "text": "Gərginlik cərəyan şiddəti ilə müqavimətin hasilidir: U = I × R. Ölçü vahidləri volt (V), amper (A) və omdur (Ω). Məsələn, 2 A və 5 Ω üçün gərginlik 10 V-dur.",
+    "question": "3 A cərəyan 4 Ω müqavimətdən keçirsə gərginlik neçə voltdur? Yalnız ədədi yaz.", "answer": "12",
+    "explanation": "U = I × R = 3 × 4 = 12 V."
+  },
+  {
+    "id": "median", "subject": "Statistika", "title": "Median",
+    "text": "Median sıralanmış verilənlərin ortasındakı qiymətdir. Element sayı cütdürsə, ortadakı iki qiymətin ortasını tapırıq. 2, 6, 8, 16 üçün median (6 + 8) / 2 = 7.",
+    "question": "5, 1, 9, 3, 7 siyahısının medianı neçədir?", "answer": "5",
+    "explanation": "Artan sıra 1, 3, 5, 7, 9-dur. Ortadakı üçüncü qiymət 5-dir."
+  },
+  {
+    "id": "soil", "subject": "Aqronomluq", "title": "Torpağın kütlə üzrə nəmliyi",
+    "text": "Quru kütləyə görə torpaq nəmliyi (nəm kütlə − quru kütlə) / quru kütlə × 100 düsturu ilə hesablanır. 110 q nəm və 100 q quru torpaq üçün nəticə 10%-dir.",
+    "question": "Nəm kütlə 60 q, quru kütlə 50 q-dır. Nəmlik neçə faizdir? Yalnız ədədi yaz.", "answer": "20",
+    "explanation": "(60 − 50) / 50 × 100 = 20%."
+  },
+  {
+    "id": "present-simple", "subject": "İngilis dili", "title": "Present Simple",
+    "text": "Present Simple daimi vəziyyətləri, vərdişləri və ümumi həqiqətləri ifadə edir. He, she və it ilə təsdiq cümləsində fel çox vaxt -s və ya -es alır. Məsələn: I study. She studies.",
+    "question": "She ___ English every day. (study)", "answer": "studies",
+    "explanation": "She üçün study felində y → ies dəyişir: studies."
+  },
+  {
+    "id": "source-check", "subject": "Rəqəmsal savad", "title": "İnternet mənbəsini yoxla",
+    "text": "İddianı paylaşmazdan əvvəl müəllifi, tarixi və ilkin mənbəni tap. Sonra onunla əlaqəsi olmayan etibarlı bir mənbədə eyni dəlilin göstərilib-göstərilmədiyini yoxla.",
+    "question": "Xəbər bir elmi nəticədən danışır. İlkin mənbə kimi ilk nəyi axtararsan: reklamı, yoxsa tədqiqatı? Bir söz yaz.", "answer": "tədqiqatı",
+    "explanation": "İlkin tədqiqatın mətnində müəllif, metod və ölçülmüş nəticə göstərilir."
+  }
+]
