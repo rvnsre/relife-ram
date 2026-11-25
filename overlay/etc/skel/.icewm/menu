@@ -1,10 +1,10 @@
-prog "Təhsil mərkəzi" /usr/share/icons/relife/write.xpm relife-education
+prog "Təhsil mərkəzi" /usr/share/icons/relife/education.xpm relife-education
 prog "İnternet — Firefox" /usr/share/icons/relife/internet.xpm relife-firefox
 prog "Fayllar" /usr/share/icons/relife/files.xpm pcmanfm
 prog "Yazı yaz" /usr/share/icons/relife/write.xpm mousepad
 separator
-prog "Wi-Fi və şəbəkə" /usr/share/icons/relife/internet.xpm nm-connection-editor
-prog "Səs" /usr/share/icons/relife/sound.xpm pavucontrol
+prog "Wi-Fi və şəbəkə" /usr/share/icons/relife/network.xpm nm-connection-editor
+prog "Səs" /usr/share/icons/relife/sound.xpm relife-sound
 prog "İstifadə qaydası" /usr/share/icons/relife/help.xpm relife-help
 separator
 prog "Yenidən başlat" /usr/share/icons/relife/power.xpm relife-power reboot

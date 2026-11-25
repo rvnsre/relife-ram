@@ -1,8 +1,6 @@
 [Desktop Entry]
-Type=Application
+Type=Link
 Name=Təhsil mərkəzi
 Name[en]=Education Center
-Exec=relife-education
-Icon=/usr/share/icons/relife/write.xpm
-Categories=Education;
-Terminal=false
+Icon=/usr/share/icons/relife/education.xpm
+URL=file:///usr/share/applications/relife-education.desktop

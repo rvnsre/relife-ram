@@ -7,6 +7,7 @@ import subprocess
 import tkinter as tk
 from tkinter import filedialog, font, messagebox, ttk
 
+import appearance
 import learning
 
 
@@ -17,14 +18,10 @@ class Education:
         self.current = None
         self.focus_timer = None
         root.title("ReLife · Təhsil mərkəzi")
-        root.geometry("820x660")
+        root.geometry(f"{min(840, root.winfo_screenwidth() - 20)}x{min(660, root.winfo_screenheight() - 65)}")
         root.minsize(610, 480)
-        for name in ("TkDefaultFont", "TkTextFont", "TkHeadingFont"):
-            font.nametofont(name).configure(family="DejaVu Sans", size=11)
-        style = ttk.Style()
-        style.theme_use("clam")
-        style.configure("TButton", padding=6)
-        style.configure("TNotebook.Tab", padding=(11, 8))
+        appearance.configure(root)
+        ttk.Label(root, text="Təhsil mərkəzi", style="Header.TLabel").pack(fill="x")
         tabs = ttk.Notebook(root)
         tabs.pack(fill="both", expand=True, padx=12, pady=12)
         tabs.enable_traversal()
@@ -39,7 +36,7 @@ class Education:
             pane = ttk.Frame(tabs, padding=12)
             tabs.add(pane, text=label)
             populate(pane)
-        ttk.Label(root, text="RAM sessiyası bitməzdən əvvəl işinizi xarici yaddaşa ixrac edin.").pack(
+        ttk.Label(root, text="RAM sessiyası bitməzdən əvvəl işinizi xarici yaddaşa ixrac edin.", style="Caption.TLabel").pack(
             anchor="w", padx=14, pady=(0, 9)
         )
 
@@ -58,12 +55,17 @@ class Education:
     def actions(self, parent, *actions):
         row = ttk.Frame(parent)
         row.pack(anchor="w", pady=(2, 6))
-        for title, command in actions:
-            ttk.Button(row, text=title, command=command).pack(side="left", padx=(0, 6))
+        for index, (title, command) in enumerate(actions):
+            style = "Primary.TButton" if index == 0 else "TButton"
+            ttk.Button(row, text=title, command=command, style=style).pack(side="left", padx=(0, 6))
         return row
 
     def output(self, parent, height=4, editable=False):
-        box = tk.Text(parent, wrap="word", height=height, width=1, padx=6, pady=6, font="TkTextFont")
+        box = tk.Text(parent, wrap="word", height=height, width=1, padx=12, pady=10, font="TkTextFont",
+                      background="#ffffff", foreground=appearance.INK, insertbackground=appearance.INK,
+                      relief="flat", borderwidth=0, highlightthickness=1,
+                      highlightbackground=appearance.BORDER, highlightcolor=appearance.ACCENT,
+                      selectbackground=appearance.ACCENT, selectforeground="#ffffff")
         box.pack(fill="both", expand=True, pady=(2, 7))
         if not editable:
             box.configure(state="disabled")
@@ -361,7 +363,11 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--help-page", action="store_true")
     args = parser.parse_args()
-    root = tk.Tk(baseName="relife-education")
+    root = tk.Tk(className="RelifeEducation")
+    icon_path = Path("/usr/share/icons/relife/education.png")
+    if icon_path.is_file():
+        icon = tk.PhotoImage(file=icon_path)
+        root.iconphoto(True, icon)
     app = Education(root)
     if args.help_page:
         app.tabs.select(app.help_pane)

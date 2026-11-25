@@ -1,4 +1,9 @@
-ReLife RAM v0.3.0 Alpha 1 provides two amd64 live images. Extreme Lite runs the
+The ReLife desktop now uses an original dark frame, teal accents, a new
+wallpaper and clearer app icons. The Education Center and Extreme Lite
+volume controls use matching native widgets. Built-in desktop shortcuts point
+to the installed applications and can open directly in PCManFM.
+
+ReLife RAM v0.3.0 Alpha 2 provides two amd64 live images. Extreme Lite runs the
 offline Education Center without a browser. Education adds Firefox ESR and
 confirmed links to ChatGPT, Claude and Gemini.
 

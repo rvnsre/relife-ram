@@ -46,9 +46,9 @@ awk '/MemTotal:/{t=$2} /MemFree:/{f=$2} /MemAvailable:/{a=$2} END {printf "IDLE_
 echo RELIFE_IDLE_END
 sleep 5
 as_student() { runuser -u student -- env HOME=/home/student DISPLAY=:0 XAUTHORITY=/home/student/.Xauthority "$@"; }
-as_student relife-education >/tmp/relife-education.log 2>&1 &
+as_student pcmanfm --profile ReLife /home/student/Desktop/help.desktop >/tmp/relife-education.log 2>&1 &
 for n in $(seq 1 20); do
-  window=$(as_student xdotool search --onlyvisible --name '^ReLife' | head -1)
+  window=$(as_student xdotool search --onlyvisible --name '^ReLife.*T' | head -1)
   if [ -n "$window" ]; then
     echo RELIFE_EDUCATION_OK
     break
@@ -57,6 +57,10 @@ for n in $(seq 1 20); do
 done
 cat /tmp/relife-education.log
 echo RELIFE_EDUCATION_END
+sleep 4
+as_student pcmanfm --profile ReLife /home/student >/tmp/relife-files.log 2>&1 &
+sleep 3
+echo RELIFE_FILES_END
 sleep 4
 if command -v firefox-esr >/dev/null; then
 as_student relife-firefox file:///usr/share/relife/start.html >/tmp/relife-browser.log 2>&1 &
@@ -117,7 +121,7 @@ def boot(mode):
     reader = threading.Thread(target=read, daemon=True)
     reader.start()
     stage = 0
-    seen_idle = seen_browser = seen_education = False
+    seen_idle = seen_browser = seen_education = seen_files = False
     deadline = time.monotonic() + 420
     heartbeat = time.monotonic()
     try:
@@ -140,6 +144,9 @@ def boot(mode):
             if not seen_education and 'RELIFE_EDUCATION_END' in text:
                 screenshot(qmp, OUT / f'{mode}-education.ppm')
                 seen_education = True
+            if not seen_files and 'RELIFE_FILES_END' in text:
+                screenshot(qmp, OUT / f'{mode}-files.ppm')
+                seen_files = True
             if not seen_browser and 'RELIFE_BROWSER_END' in text:
                 screenshot(qmp, OUT / f'{mode}-firefox.ppm'); seen_browser = True
             if time.monotonic() - heartbeat >= 30:

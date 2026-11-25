@@ -1,0 +1,6 @@
+[Desktop Entry]
+Type=Application
+Name=Fayllar
+Exec=pcmanfm
+Icon=/usr/share/icons/relife/files.xpm
+Terminal=false

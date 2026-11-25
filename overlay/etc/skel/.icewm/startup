@@ -1,5 +1,5 @@
 #!/bin/sh
-xsetroot -solid '#1677b8'
+xsetroot -solid '#101F2D'
 pcmanfm --desktop --profile ReLife >/tmp/relife-desktop.log 2>&1 &
 if command -v pulseaudio >/dev/null; then
   pulseaudio --start --exit-idle-time=60 >/tmp/relife-audio.log 2>&1

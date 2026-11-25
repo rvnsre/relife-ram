@@ -1,21 +1,6 @@
-MenuFontNameXft="DejaVu Sans:size=12"
-TaskBarFontNameXft="DejaVu Sans:size=11"
-TitleFontNameXft="DejaVu Sans:size=11:bold"
-ColorNormalTitleBar="#f3f4f6"
-ColorNormalTitleBarText="#20252b"
-ColorActiveTitleBar="#0078d7"
-ColorActiveTitleBarText="#ffffff"
-ColorTaskBar="#1d2229"
-ColorNormalTaskBarApp="#303842"
-ColorNormalTaskBarAppText="#ffffff"
-ColorActiveTaskBarApp="#0078d7"
-ColorActiveTaskBarAppText="#ffffff"
-ColorNormalMenu="#f9fafb"
-ColorNormalMenuItemText="#1b2430"
-ColorActiveMenuItem="#0078d7"
-ColorActiveMenuItemText="#ffffff"
-BorderSizeX=2
-BorderSizeY=2
-TitleBarHeight=30
-SmallIconSize=24
-LargeIconSize=48
+MenuFontNameXft="DejaVu Sans:size=10"
+TaskBarFontNameXft="DejaVu Sans:size=10"
+ClockFontNameXft="DejaVu Sans:size=10"
+TitleFontNameXft="DejaVu Sans:size=10:bold"
+SmallIconSize=20
+LargeIconSize=32

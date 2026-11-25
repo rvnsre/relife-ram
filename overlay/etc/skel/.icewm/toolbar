@@ -1,3 +1,4 @@
+prog "Təhsil mərkəzi" /usr/share/icons/relife/education.xpm relife-education
 prog "İnternet" /usr/share/icons/relife/internet.xpm relife-firefox
 prog "Fayllar" /usr/share/icons/relife/files.xpm pcmanfm
-prog "Səs" /usr/share/icons/relife/sound.xpm pavucontrol
+prog "Səs" /usr/share/icons/relife/sound.xpm relife-sound

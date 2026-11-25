@@ -90,11 +90,12 @@ fi
 PROFILE
 # Project-owned lightweight UI, browser profile and touchpad settings.
 cp -a ../../overlay/. config/includes.chroot/
+python3 ../../desktop/make-assets.py config/includes.chroot
 if [ "$edition" = extreme-lite ]; then
   skel=config/includes.chroot/etc/skel
   rm -f "$skel/Desktop/internet.desktop" config/includes.chroot/usr/share/applications/relife-firefox.desktop
   sed -i '/relife-firefox/d' "$skel/.icewm/"{menu,toolbar,keys}
-  sed -i -e 's/nm-connection-editor/xterm -e nmtui/' -e 's/pavucontrol/xterm -e alsamixer/' "$skel/.icewm/"{menu,toolbar}
+  sed -i -e 's/nm-connection-editor/xterm -e nmtui/' "$skel/.icewm/"{menu,toolbar}
   cat > config/hooks/live/0910-locales.hook.chroot <<'LOCALES'
 #!/bin/sh
 set -eu

@@ -3,6 +3,6 @@ Type=Application
 Name=Təhsil mərkəzi
 Name[en]=Education Center
 Exec=relife-education
-Icon=/usr/share/icons/relife/write.xpm
+Icon=/usr/share/icons/relife/education.xpm
 Categories=Education;
 Terminal=false
