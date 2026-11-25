@@ -1,0 +1,98 @@
+name: Recover tested ReLife release
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/retry-alpha-release.yml']
+permissions:
+  actions: read
+  contents: write
+concurrency: relife-alpha-release-recovery
+env:
+  RUN_ID: '45645538564'
+  SOURCE_SHA: cc20ef5af8f04c809a68927e8438cfa4c0603235
+  TAG_NAME: v0.3.0-alpha.3
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.SOURCE_SHA }}
+      - name: Verify the source commit and required jobs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          test "$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$RUN_ID" --jq .head_sha)" = "$SOURCE_SHA"
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$RUN_ID/jobs" |
+            jq -e '["build (extreme-lite)", "build (education)", "windows"] - [.jobs[] | select(.conclusion == "success") | .name] | length == 0'
+      - uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ github.token }}
+          run-id: ${{ env.RUN_ID }}
+          pattern: '*-candidate'
+          path: release
+          merge-multiple: true
+      - uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ github.token }}
+          run-id: ${{ env.RUN_ID }}
+          name: relife-windows-setup
+          path: release
+      - uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ github.token }}
+          run-id: ${{ env.RUN_ID }}
+          pattern: '*-validation'
+          path: evidence
+      - name: Publish the verified assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          lite=evidence/relife-extreme-lite-validation/dist/extreme-lite
+          education=evidence/relife-education-validation/dist/education
+          (cd release && sha256sum -c "../$lite/SHA256SUMS" && sha256sum -c "../$education/SHA256SUMS")
+          cp "$lite/VALIDATION.json" release/VALIDATION-EXTREME-LITE.json
+          cp "$lite/VALIDATION-WINDOWS-UEFI.json" release/
+          cp "$education/VALIDATION.json" release/VALIDATION-EDUCATION.json
+          cp "$lite/bios-desktop.png" release/ReLife-Desktop.png
+          cp "$lite/bios-education.png" release/ReLife-Education-Center.png
+          cp "$lite/bios-files.png" release/ReLife-Files.png
+          (cd release && sha256sum *.iso *.exe *.zip > SHA256SUMS)
+          lookup() {
+            gh api --paginate "repos/$GITHUB_REPOSITORY/releases" --jq ".[] | select(.tag_name == \"$TAG_NAME\")" | jq -sc 'first // empty'
+          }
+          release_info=$(lookup)
+          for attempt in 1 2 3; do
+            if [ -n "$release_info" ]; then break; fi
+            if release_info=$(gh api "repos/$GITHUB_REPOSITORY/releases" -X POST \
+              -f tag_name="$TAG_NAME" -f target_commitish="$SOURCE_SHA" \
+              -f name='ReLife RAM v0.3.0 Alpha 3' -f body=@RELEASE-NOTES.md \
+              -F draft=true -F prerelease=true); then break; fi
+            sleep "$((attempt * 5))"
+            release_info=$(lookup)
+          done
+          test "$(jq -r .target_commitish <<<"$release_info")" = "$SOURCE_SHA"
+          release_id=$(jq -r .id <<<"$release_info")
+          upload_template=$(jq -r .upload_url <<<"$release_info")
+          upload_url=${upload_template%%\{*}
+          for asset in release/*; do
+            name=${asset##*/}
+            hash=$(sha256sum "$asset" | cut -d ' ' -f1)
+            for attempt in 1 2 3; do
+              digest=$(gh api "repos/$GITHUB_REPOSITORY/releases/$release_id/assets" \
+                --jq ".[] | select(.name == \"$name\") | .digest")
+              if [ "$digest" = "sha256:$hash" ]; then break; fi
+              test -z "$digest"
+              if curl -fsS --connect-timeout 30 --max-time 300 -o /tmp/relife-upload.json \
+                -H "Authorization: Bearer $GH_TOKEN" -H 'Content-Type: application/octet-stream' \
+                --data-binary "@$asset" "$upload_url?name=$name"; then break; fi
+              sleep "$((attempt * 5))"
+            done
+            digest=$(gh api "repos/$GITHUB_REPOSITORY/releases/$release_id/assets" \
+              --jq ".[] | select(.name == \"$name\") | .digest")
+            test "$digest" = "sha256:$hash"
+          done
+          gh api "repos/$GITHUB_REPOSITORY/releases/$release_id" -X PATCH -F draft=false --jq .html_url
