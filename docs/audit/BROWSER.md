@@ -16,8 +16,9 @@ The live user's active local desktop can add NetworkManager profiles. The
 rule is scoped to the profile-management action, since Debian's default
 policy requires administrator authentication for a new system profile.
 
-Builds retain official Debian firmware for popular Intel, Realtek and Qualcomm
-Atheros adapters. Education includes additional MediaTek and Broadcom firmware.
-VM reports retain the original 700 MB measurement and record raw/free-based RAM
-too. The added driver coverage can increase the compressed live image and its
-RAM footprint.
+Extreme Lite keeps Intel Wi-Fi 4/5 and AX200/AX201 firmware, Realtek firmware,
+and Qualcomm Atheros Wi-Fi 4/5 and QCA6390 firmware. Education retains the
+full Intel, Realtek and Qualcomm Atheros packages and adds MediaTek and
+Broadcom firmware. The 1 GiB Extreme Lite VM gate checks idle memory against
+700 MB and captures Firefox's memory use after loading the test page. It
+also verifies compressed RAM swap has no backing device.

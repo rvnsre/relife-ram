@@ -7,7 +7,7 @@ The source of the wallpaper and icons is in `desktop/make-assets.py`.
 
 | Image | Included | VM test configuration |
 | --- | --- | --- |
-| Extreme Lite | Offline Education Center, Firefox ESR, Xpdf, Mousepad and NetworkManager’s text UI | 1 GiB RAM, 2 vCPUs |
+| Extreme Lite | Offline Education Center, Firefox ESR, Xpdf, Mousepad and firmware focused on older Wi-Fi adapters | 1 GiB RAM, 2 vCPUs |
 | Education | Extreme Lite’s tools plus graphical network and sound settings | 2 GiB RAM, 2 vCPUs |
 
 On either image open **Təhsil mərkəzi** from the desktop or Start menu. The
@@ -16,7 +16,10 @@ English and digital literacy exercises. The center also has cards with spaced
 repetition, text export, lesson plans, a worksheet builder, a daily planner, science calculations and a focus
 timer. Export work before closing the app or powering off. Live sessions use a
 volatile overlay, load the compressed system into RAM and start without
-persistence or physical disk swap.
+persistence or physical disk swap. Extreme Lite enables up to 512 MiB of
+compressed RAM swap on live systems with up to 1,150 MiB of usable RAM.
+Education includes the full bundled Intel, Realtek and Qualcomm packages
+alongside MediaTek and Broadcom firmware.
 
 ## AI and MCP
 
@@ -50,8 +53,9 @@ written to `dist/<edition>/`.
 On a Debian host with QEMU, OVMF and Pillow run `python3 tests/boot.py
 extreme-lite --ram 1024` or `python3 tests/boot.py education --ram 2048`.
 CI captures BIOS and UEFI graphics, checks the desktop and Education Center
-with networking disconnected, and verifies shutdown. The Extreme Lite gate
-uses MemTotal minus MemAvailable and checks it against 700,000,000 bytes.
+while Firefox loads a page from the VM's test network, and verifies shutdown.
+The 1 GiB Extreme Lite test checks that RAM-only swap is active and that
+MemTotal minus MemAvailable stays within 700,000,000 bytes at idle.
 The result JSON also records MemTotal minus MemFree, which includes reclaimable
 cache, and states the VM RAM allocation. There is a separate FAT32 boot test.
 Historical measurements remain in [VALIDATION.md](VALIDATION.md).

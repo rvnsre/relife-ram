@@ -48,7 +48,15 @@ findmnt /run/live/medium
 losetup -l
 dpkg-query -W python3-tk xpdf
 findmnt -n -o FSTYPE,OPTIONS /run/live/medium | grep -Eq '^tmpfs[[:space:]]+ro(,|$)' && echo RELIFE_TORAM_OK
+if awk 'NR > 1 && $1 !~ /^\/dev\/zram[0-9]+$/ {bad=1} END {exit bad}' /proc/swaps; then
+  disk_backed=false
+  for backing in /sys/block/zram*/backing_dev; do
+    [ ! -f "$backing" ] || [ "$(cat "$backing")" = none ] || disk_backed=true
+  done
+  [ "$disk_backed" = true ] || echo RELIFE_NO_DISK_SWAP_OK
+fi
 [ "$(wc -l < /proc/swaps)" -eq 1 ] && echo RELIFE_SWAP_OK
+awk '$1 ~ /^\/dev\/zram[0-9]+$/ {found=1} END {exit !found}' /proc/swaps && echo RELIFE_ZRAM_OK
 awk '/MemTotal:/{t=$2} /MemFree:/{f=$2} /MemAvailable:/{a=$2} END {printf "IDLE_RAW_BYTES=%.0f\nIDLE_AVAILABLE_BYTES=%.0f\n",(t-f)*1024,(t-a)*1024}' /proc/meminfo
 echo RELIFE_IDLE_END
 sleep 5
@@ -270,6 +278,7 @@ def boot(mode):
               'network': 'RELIFE_NETWORK_OK' in text, 'switcher': 'RELIFE_SWITCHER_OK' in text,
               'education': bool(re.search(r'^RELIFE_EDUCATION_OK\r?$', text, re.M)),
               'toram': 'RELIFE_TORAM_OK' in text, 'no_swap': 'RELIFE_SWAP_OK' in text,
+              'no_disk_swap': 'RELIFE_NO_DISK_SWAP_OK' in text, 'zram': 'RELIFE_ZRAM_OK' in text,
               'shutdown': code == 0 and 'RELIFE_SHUTDOWN_REQUEST' in text, 'memory': metrics}
     # Memory target is reported separately; a boot pass cannot imply a memory pass.
     result['idle_700mb_available'] = metrics.get('IDLE_AVAILABLE_BYTES', 10**12) <= 700000000
@@ -281,6 +290,8 @@ results = [boot("uefi-fat32")] if args.disk else [boot("bios"), boot("uefi")]
 report = "VALIDATION-WINDOWS-UEFI.json" if args.disk else "VALIDATION.json"
 (OUT / report).write_text(json.dumps({'edition': args.edition, 'ram_mib': args.ram, 'hard_disks': int(bool(args.disk)), 'results': results,
     'limitations': ['Physical touchpad gestures require hardware validation.', 'Networking test checks DHCP and HTTP in Firefox through QEMU. Physical Wi-Fi, captive portals and public internet need separate validation.']}, indent=2))
-required = ["desktop", "education", "toram", "no_swap", "shutdown"]
+required = ["desktop", "education", "toram", "no_disk_swap", "shutdown"]
 required += ["firefox", "gesture_services", "network", "switcher"]
+if args.edition == "extreme-lite" and args.ram == 1024:
+    required += ["zram", "idle_700mb_available"]
 raise SystemExit(0 if all(all(result[key] for key in required) for result in results) else 1)

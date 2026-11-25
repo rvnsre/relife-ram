@@ -1,0 +1,9 @@
+[Unit]
+Description=ReLife compressed RAM for low-memory live systems
+ConditionKernelCommandLine=boot=live
+Before=getty@tty1.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/relife-init-zram
+RemainAfterExit=yes

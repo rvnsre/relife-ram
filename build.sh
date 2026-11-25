@@ -19,7 +19,6 @@ live-config
 live-config-systemd
 user-setup
 xauth
-x11-xserver-utils
 keyboard-configuration
 linux-image-amd64
 systemd-sysv
@@ -61,6 +60,7 @@ sudo
 PKG
 if [ "$edition" = education ]; then
   cat >> config/package-lists/relife.list.chroot <<'PKG'
+x11-xserver-utils
 pavucontrol
 firmware-mediatek
 firmware-brcm80211
@@ -112,6 +112,9 @@ bash ../../scripts/build-touchegg.sh config/includes.chroot
 mkdir -p config/includes.chroot/etc/systemd/system/multi-user.target.wants
 ln -sf ../touchegg.service config/includes.chroot/etc/systemd/system/multi-user.target.wants/touchegg.service
 if [ "$edition" = extreme-lite ]; then
+  install -m 0755 ../../scripts/init-zram.sh config/includes.chroot/usr/local/bin/relife-init-zram
+  install -m 0644 ../../scripts/relife-zram.service config/includes.chroot/etc/systemd/system/
+  ln -sf ../relife-zram.service config/includes.chroot/etc/systemd/system/multi-user.target.wants/relife-zram.service
   cat > config/hooks/live/0910-locales.hook.chroot <<'LOCALES'
 #!/bin/sh
 set -eu
@@ -119,6 +122,7 @@ find /usr/share/locale -mindepth 1 -maxdepth 1 \
   ! -name 'az*' ! -name 'en*' ! -name 'locale.alias' -exec rm -rf -- {} +
 LOCALES
   chmod +x config/hooks/live/0910-locales.hook.chroot
+  install -m 0755 ../../scripts/trim-lite-firmware.sh config/hooks/live/0920-firmware.hook.chroot
 fi
 cat > config/hooks/live/0200-firefox.hook.chroot <<'FIREFOX'
 #!/bin/sh
