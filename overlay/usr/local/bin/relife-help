@@ -1,0 +1,2 @@
+#!/bin/sh
+exec relife-firefox file:///usr/share/relife/start.html

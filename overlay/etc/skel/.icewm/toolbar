@@ -1,0 +1,3 @@
+prog "İnternet" /usr/share/icons/relife/internet.xpm relife-firefox
+prog "Fayllar" /usr/share/icons/relife/files.xpm pcmanfm
+prog "Səs" /usr/share/icons/relife/sound.xpm pavucontrol

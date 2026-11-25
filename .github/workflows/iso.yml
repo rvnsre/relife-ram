@@ -3,35 +3,45 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
+    paths: ['build.sh', 'overlay/**', 'tests/**', '.github/workflows/iso.yml']
 permissions:
   contents: read
 jobs:
   build:
     runs-on: ubuntu-24.04
-    timeout-minutes: 90
+    timeout-minutes: 55
     container:
       image: debian:13
       options: --privileged
     steps:
       - uses: actions/checkout@v4
       - name: Install build and test tools
-        run: apt-get update && apt-get install -y live-build debootstrap xorriso squashfs-tools isolinux syslinux-common grub-pc-bin grub-efi-amd64-bin dosfstools mtools ca-certificates qemu-system-x86 ovmf python3
+        run: apt-get update && apt-get install -y live-build debootstrap xorriso squashfs-tools isolinux syslinux-common grub-pc-bin grub-efi-amd64-bin dosfstools mtools ca-certificates curl qemu-system-x86 ovmf python3 python3-pil
+      - name: Validate source syntax
+        run: |
+          bash -n build.sh
+          python3 -m py_compile tests/boot.py overlay/usr/local/lib/relife/firefox_profile.py
+          python3 -c "import json,xml.etree.ElementTree as E; json.load(open('overlay/etc/firefox/policies/policies.json')); E.parse('overlay/etc/skel/.config/touchegg/touchegg.conf')"
       - name: Build hybrid ISO
         run: bash build.sh 2>&1 | tee build.log
         shell: bash --noprofile --norc -eo pipefail {0}
       - uses: actions/upload-artifact@v4
         with:
           name: relife-iso-candidate
-          path: dist/
+          path: dist/*.iso
+          compression-level: 0
           if-no-files-found: error
-      - name: QEMU BIOS and UEFI desktop probes
+      - name: BIOS and UEFI desktop, Firefox and shutdown tests
         run: python3 tests/boot.py
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: relife-ram-amd64
+          name: relife-validation
           path: |
-            dist/
+            dist/*.png
+            dist/*.json
+            dist/*.log
+            dist/SHA256SUMS
             build.log
           if-no-files-found: error
           retention-days: 14

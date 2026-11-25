@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=İnternet — Firefox
+Exec=relife-firefox %U
+Icon=/usr/share/icons/relife/internet.xpm
+Terminal=false
+Categories=Network;WebBrowser;
+MimeType=text/html;x-scheme-handler/http;x-scheme-handler/https;

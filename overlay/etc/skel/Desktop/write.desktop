@@ -1,0 +1,6 @@
+[Desktop Entry]
+Type=Application
+Name=Yazı yaz
+Exec=mousepad
+Icon=/usr/share/icons/relife/write.xpm
+Terminal=false

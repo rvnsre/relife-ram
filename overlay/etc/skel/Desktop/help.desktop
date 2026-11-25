@@ -1,0 +1,6 @@
+[Desktop Entry]
+Type=Application
+Name=İstifadə qaydası
+Exec=relife-help
+Icon=/usr/share/icons/relife/help.xpm
+Terminal=false

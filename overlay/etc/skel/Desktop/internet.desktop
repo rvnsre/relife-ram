@@ -1,0 +1,6 @@
+[Desktop Entry]
+Type=Application
+Name=İnternet
+Exec=relife-firefox
+Icon=/usr/share/icons/relife/internet.xpm
+Terminal=false

@@ -1,0 +1,10 @@
+{
+  "policies": {
+    "DisableTelemetry": true,
+    "DisableFirefoxStudies": true,
+    "DontCheckDefaultBrowser": true,
+    "OverrideFirstRunPage": "file:///usr/share/relife/start.html",
+    "OverridePostUpdatePage": "",
+    "Homepage": {"URL": "file:///usr/share/relife/start.html", "StartPage": "homepage"}
+  }
+}

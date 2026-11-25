@@ -5,7 +5,7 @@ cd "$(dirname "$0")"
 mkdir -p build
 cd build
 lb clean --purge || true
-lb config --mode debian --distribution trixie --architectures amd64 --binary-image iso-hybrid --bootloaders "syslinux grub-efi" --firmware-chroot false --firmware-binary false --apt-indices false --debootstrap-options "--variant=minbase" --archive-areas 'main contrib non-free-firmware' --apt-recommends false --debian-installer none --memtest none --bootappend-live 'boot=live components toram=filesystem.squashfs nopersistence swap=false username=student hostname=relife locales=C.UTF-8 console=tty0 console=ttyS0,115200n8' --chroot-squashfs-compression-type xz --iso-volume RELIFE_RAM
+lb config --mode debian --distribution trixie --architectures amd64 --binary-image iso-hybrid --bootloaders "syslinux grub-efi" --firmware-chroot false --firmware-binary false --apt-indices false --debootstrap-options "--variant=minbase" --archive-areas 'main contrib non-free-firmware' --apt-recommends false --debian-installer none --memtest none --bootappend-live 'boot=live components toram=filesystem.squashfs noeject nopersistence swap=false username=student hostname=relife locales=C.UTF-8 console=tty0 console=ttyS0,115200n8' --chroot-squashfs-compression-type xz --uefi-secure-boot disable --iso-volume RELIFE_RAM
 mkdir -p config/package-lists config/includes.chroot/etc/systemd/journald.conf.d config/includes.chroot/etc/skel config/includes.chroot/usr/local/bin config/hooks/live
 cat > config/package-lists/relife.list.chroot <<'PKG'
 live-boot
@@ -31,6 +31,16 @@ network-manager
 wpasupplicant
 iproute2
 ca-certificates
+firefox-esr
+alsa-utils
+pulseaudio
+pavucontrol
+network-manager-gnome
+mousepad
+xdg-utils
+xdotool
+python3
+curl
 sudo
 PKG
 cat > config/includes.chroot/etc/skel/.xinitrc <<'X'
@@ -59,41 +69,21 @@ if [ -z "${DISPLAY:-}" ] && [ "$(tty)" = /dev/tty1 ]; then
   exec startx >> "$HOME/.relife-x.log" 2>&1
 fi
 PROFILE
-cat > config/includes.chroot/etc/systemd/system/relife-probe.service <<'SERVICE'
-[Unit]
-Description=Opt-in CI desktop memory probe
-After=systemd-user-sessions.service
-ConditionVirtualization=qemu
-[Service]
-Type=oneshot
-ExecStart=/usr/local/bin/relife-probe
-StandardOutput=tty
-TTYPath=/dev/ttyS0
-[Install]
-WantedBy=multi-user.target
-SERVICE
-mkdir -p config/includes.chroot/etc/systemd/system/multi-user.target.wants
-ln -sf ../relife-probe.service config/includes.chroot/etc/systemd/system/multi-user.target.wants/relife-probe.service
-cat > config/includes.chroot/usr/local/bin/relife-probe <<'PROBE'
-#!/bin/bash
+# Project-owned lightweight UI, browser profile and touchpad settings.
+cp -a ../overlay/. config/includes.chroot/
+mkdir -p config/includes.chroot/tmp
+curl --fail --location --retry 3 https://github.com/JoseExposito/touchegg/releases/download/2.0.18/touchegg_2.0.18_amd64.deb -o config/includes.chroot/tmp/touchegg.deb
+sha256sum config/includes.chroot/tmp/touchegg.deb
+cat > config/hooks/live/0200-touchegg.hook.chroot <<'GESTURES'
+#!/bin/sh
 set -eu
-[ "$(cat /sys/class/dmi/id/product_serial)" = RELIFE_CI ] || exit 0
-for i in $(seq 1 120); do pgrep -x icewm >/dev/null && break; sleep 2; done
-pgrep -x icewm >/dev/null || { echo RELIFE_DESKTOP_FAIL; getent passwd student; journalctl -u getty@tty1 --no-pager; cat /home/student/.relife-x.log /home/student/.local/share/xorg/Xorg.0.log /var/log/Xorg.0.log 2>/dev/null || true; exit 1; }
-sleep 60
-echo RELIFE_REPORT_BEGIN
-cat /proc/cmdline
-cat /proc/meminfo
-cat /proc/swaps
-findmnt -o TARGET,SOURCE,FSTYPE,OPTIONS
-losetup -l
-# Raw used includes all cache, including the compressed image. Conservative cap.
-awk '/MemTotal:/{t=$2} /MemFree:/{f=$2} /MemAvailable:/{a=$2} END {printf "RAW_USED_BYTES=%.0f\nAVAILABLE_USED_BYTES=%.0f\n",(t-f)*1024,(t-a)*1024; if ((t-f)*1024 <= 700000000) print "RELIFE_MEMORY_PASS"; else print "RELIFE_MEMORY_FAIL"}' /proc/meminfo
-[ "$(wc -l < /proc/swaps)" -eq 1 ] && echo RELIFE_SWAP_PASS
-echo RELIFE_REPORT_END
-systemctl poweroff
-PROBE
-chmod +x config/includes.chroot/usr/local/bin/relife-probe
+apt-get install -y --no-install-recommends /tmp/touchegg.deb
+rm /tmp/touchegg.deb
+systemctl enable touchegg.service
+mkdir -p /usr/lib/firefox-esr/distribution
+ln -sf /etc/firefox/policies/policies.json /usr/lib/firefox-esr/distribution/policies.json
+GESTURES
+chmod +x config/hooks/live/0200-touchegg.hook.chroot
 cat > config/hooks/live/0900-trim.hook.chroot <<'TRIM'
 #!/bin/sh
 set -eu
@@ -114,6 +104,6 @@ MENU
 chmod +x config/hooks/live/0999-timeout.hook.binary
 lb build
 mkdir -p ../dist
-cp live-image-amd64.hybrid.iso ../dist/relife-ram-v0.1.0-amd64.iso
+cp live-image-amd64.hybrid.iso ../dist/relife-ram-v0.2.0-amd64.iso
 cd ../dist
 sha256sum *.iso > SHA256SUMS
