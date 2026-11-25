@@ -5,12 +5,16 @@ cd "$(dirname "$0")"
 mkdir -p build
 cd build
 lb clean --purge || true
-lb config --mode debian --distribution trixie --architectures amd64 --binary-image iso-hybrid --bootloaders "syslinux grub-efi" --firmware-chroot false --firmware-binary false --apt-indices false --debootstrap-options "--variant=minbase" --archive-areas 'main contrib non-free-firmware' --apt-recommends false --debian-installer none --memtest none --bootappend-live 'boot=live components toram=filesystem.squashfs nopersistence swap=false username=student hostname=relife console=tty0 console=ttyS0,115200n8' --chroot-squashfs-compression-type xz --iso-volume RELIFE_RAM
+lb config --mode debian --distribution trixie --architectures amd64 --binary-image iso-hybrid --bootloaders "syslinux grub-efi" --firmware-chroot false --firmware-binary false --apt-indices false --debootstrap-options "--variant=minbase" --archive-areas 'main contrib non-free-firmware' --apt-recommends false --debian-installer none --memtest none --bootappend-live 'boot=live components toram=filesystem.squashfs nopersistence swap=false username=student hostname=relife locales=C.UTF-8 console=tty0 console=ttyS0,115200n8' --chroot-squashfs-compression-type xz --iso-volume RELIFE_RAM
 mkdir -p config/package-lists config/includes.chroot/etc/systemd/journald.conf.d config/includes.chroot/etc/skel config/includes.chroot/usr/local/bin config/hooks/live
 cat > config/package-lists/relife.list.chroot <<'PKG'
 live-boot
 live-config
 live-config-systemd
+user-setup
+xauth
+x11-xserver-utils
+keyboard-configuration
 linux-image-amd64
 systemd-sysv
 xserver-xorg-core
@@ -74,7 +78,7 @@ cat > config/includes.chroot/usr/local/bin/relife-probe <<'PROBE'
 set -eu
 [ "$(cat /sys/class/dmi/id/product_serial)" = RELIFE_CI ] || exit 0
 for i in $(seq 1 120); do pgrep -x icewm >/dev/null && break; sleep 2; done
-pgrep -x icewm >/dev/null || { echo RELIFE_DESKTOP_FAIL; exit 1; }
+pgrep -x icewm >/dev/null || { echo RELIFE_DESKTOP_FAIL; getent passwd student; journalctl -u getty@tty1 --no-pager; cat /home/student/.local/share/xorg/Xorg.0.log /var/log/Xorg.0.log 2>/dev/null || true; exit 1; }
 sleep 60
 echo RELIFE_REPORT_BEGIN
 cat /proc/cmdline
