@@ -3,4 +3,4 @@ Type=Link
 Name=Təhsil mərkəzi
 Name[en]=Education Center
 Icon=/usr/share/icons/relife/education.xpm
-URL=file:///usr/share/applications/relife-education.desktop
+URL=/usr/share/applications/relife-education.desktop

@@ -2,4 +2,4 @@
 Type=Link
 Name=İstifadə qaydası
 Icon=/usr/share/icons/relife/help.xpm
-URL=file:///usr/share/applications/relife-help.desktop
+URL=/usr/share/applications/relife-help.desktop

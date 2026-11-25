@@ -2,4 +2,4 @@
 Type=Link
 Name=İnternet
 Icon=/usr/share/icons/relife/internet.xpm
-URL=file:///usr/share/applications/relife-firefox.desktop
+URL=/usr/share/applications/relife-firefox.desktop

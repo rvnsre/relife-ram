@@ -2,4 +2,4 @@
 Type=Link
 Name=Fayllar
 Icon=/usr/share/icons/relife/files.xpm
-URL=file:///usr/share/applications/relife-files.desktop
+URL=/usr/share/applications/relife-files.desktop

@@ -2,4 +2,4 @@
 Type=Link
 Name=Yazı yaz
 Icon=/usr/share/icons/relife/write.xpm
-URL=file:///usr/share/applications/relife-write.desktop
+URL=/usr/share/applications/relife-write.desktop
