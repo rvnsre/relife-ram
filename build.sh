@@ -57,7 +57,7 @@ PROFILE
 cat > config/includes.chroot/etc/systemd/system/relife-probe.service <<'SERVICE'
 [Unit]
 Description=Opt-in CI desktop memory probe
-After=multi-user.target
+After=systemd-user-sessions.service
 ConditionVirtualization=qemu
 [Service]
 Type=oneshot
