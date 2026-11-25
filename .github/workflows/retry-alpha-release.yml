@@ -9,8 +9,8 @@ permissions:
   contents: write
 concurrency: relife-alpha-release-recovery
 env:
-  RUN_ID: '45692830893'
-  SOURCE_SHA: 710be3544b680fcbf4e686e87fdee0839fffb4bf
+  RUN_ID: '45695990313'
+  SOURCE_SHA: 4ff2e2743c053f680d6ae49895ba1d2b14dd4c32
   TAG_NAME: v0.3.0-alpha.4
 jobs:
   publish:
