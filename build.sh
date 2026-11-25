@@ -104,7 +104,7 @@ chmod +x config/hooks/live/0900-trim.hook.chroot
 cat > config/hooks/live/0999-timeout.hook.binary <<'MENU'
 #!/bin/sh
 set -eu
-find binary -type f -name '*.cfg' -exec sed -i -e 's/^timeout .*/timeout 50/' -e 's/^set timeout=.*/set timeout=5/' {} +
+find . -type f -name '*.cfg' -exec sed -i -e 's/^timeout .*/timeout 50/' -e 's/^set timeout=.*/set timeout=5/' {} +
 MENU
 chmod +x config/hooks/live/0999-timeout.hook.binary
 lb build
