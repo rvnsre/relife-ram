@@ -29,6 +29,10 @@ exec >/dev/ttyS0 2>&1
 for n in $(seq 1 120); do pgrep -x icewm >/dev/null && break; sleep 1; done
 if ! pgrep -x icewm >/dev/null; then echo RELIFE_DESKTOP_FAIL; cat /home/student/.relife-x.log; systemctl poweroff; exit; fi
 sleep 30
+for n in $(seq 1 7); do
+  awk '/^cpu /{printf "CPU_SAMPLE=%s,%s,%s,%s,%s,%s,%s,%s\n", $2,$3,$4,$5,$6,$7,$8,$9}' /proc/stat
+  sleep 2
+done
 echo RELIFE_IDLE_BEGIN
 pgrep -a icewm
 cat /proc/meminfo
@@ -44,7 +48,7 @@ sleep 5
 as_student() { runuser -u student -- env HOME=/home/student DISPLAY=:0 XAUTHORITY=/home/student/.Xauthority "$@"; }
 as_student relife-education >/tmp/relife-education.log 2>&1 &
 for n in $(seq 1 20); do
-  window=$(as_student xdotool search --onlyvisible --classname '^relife-education$' | head -1)
+  window=$(as_student xdotool search --onlyvisible --name '^ReLife' | head -1)
   if [ -n "$window" ]; then
     echo RELIFE_EDUCATION_OK
     break
@@ -150,7 +154,14 @@ def boot(mode):
         qmp.unlink(missing_ok=True)
     text = received.decode(errors='replace')
     metrics = {k: int(v) for k, v in re.findall(r'(IDLE_RAW_BYTES|IDLE_AVAILABLE_BYTES|BROWSER_RAW_BYTES|BROWSER_AVAILABLE_BYTES)=(\d+)', text)}
-    result = {'mode': mode, 'desktop': seen_idle, 'firefox': 'RELIFE_BROWSER_OK' in text,
+    cpu_ticks = [tuple(map(int, line.split(","))) for line in
+                 re.findall(r"^CPU_SAMPLE=([0-9,]+)\r?$", text, re.M)]
+    cpu_usage = []
+    for before, after in zip(cpu_ticks, cpu_ticks[1:]):
+        delta = [later - earlier for earlier, later in zip(before, after)]
+        if sum(delta):
+            cpu_usage.append(round(100 * (1 - (delta[3] + delta[4]) / sum(delta)), 2))
+    result = {'mode': mode, 'idle_cpu_samples_percent': cpu_usage, 'desktop': seen_idle, 'firefox': 'RELIFE_BROWSER_OK' in text,
               'education': bool(re.search(r'^RELIFE_EDUCATION_OK\r?$', text, re.M)),
               'toram': 'RELIFE_TORAM_OK' in text, 'no_swap': 'RELIFE_SWAP_OK' in text,
               'shutdown': code == 0 and 'RELIFE_SHUTDOWN_REQUEST' in text, 'memory': metrics}
