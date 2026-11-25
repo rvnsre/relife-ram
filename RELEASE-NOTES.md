@@ -3,7 +3,7 @@ wallpaper and clearer app icons. The Education Center and Extreme Lite
 volume controls use matching native widgets. Built-in desktop shortcuts point
 to the installed applications and can open directly in PCManFM.
 
-ReLife RAM v0.3.0 Alpha 2 provides two amd64 live images. Extreme Lite runs the
+ReLife RAM v0.3.0 Alpha 3 provides two amd64 live images. Extreme Lite runs the
 offline Education Center and Firefox ESR with an automatic CPU/RAM profile.
 Education also includes graphical network and sound settings.
 

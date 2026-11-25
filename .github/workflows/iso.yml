@@ -132,5 +132,5 @@ jobs:
           cp evidence/relife-extreme-lite-validation/dist/extreme-lite/bios-education.png release/ReLife-Education-Center.png
           cp evidence/relife-extreme-lite-validation/dist/extreme-lite/bios-files.png release/ReLife-Files.png
           (cd release && sha256sum *.iso *.exe *.zip > SHA256SUMS)
-          gh release create v0.3.0-alpha.2 release/* --target "$GITHUB_SHA" \
-            --prerelease --title 'ReLife RAM v0.3.0 Alpha 2' --notes-file RELEASE-NOTES.md
+          gh release create v0.3.0-alpha.3 release/* --target "$GITHUB_SHA" \
+            --prerelease --title 'ReLife RAM v0.3.0 Alpha 3' --notes-file RELEASE-NOTES.md

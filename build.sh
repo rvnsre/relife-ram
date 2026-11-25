@@ -58,6 +58,13 @@ pavucontrol
 network-manager-gnome
 PKG
 fi
+# The live medium already ships these under /live. Leave the build chroot
+# intact for live-build's bootloader steps, but avoid copying them into RAM twice.
+mkdir -p config/rootfs
+cat > config/rootfs/excludes <<'EXCLUDES'
+boot/initrd.img-*
+boot/vmlinuz-*
+EXCLUDES
 mkdir -p config/bootloaders/grub-pc
 cat > config/bootloaders/grub-pc/config.cfg <<'GRUB'
 set default=0

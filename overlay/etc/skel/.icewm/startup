@@ -2,7 +2,7 @@
 xsetroot -solid '#101F2D'
 pcmanfm --desktop --profile ReLife >/tmp/relife-desktop.log 2>&1 &
 if command -v pulseaudio >/dev/null; then
-  pulseaudio --start --exit-idle-time=60 >/tmp/relife-audio.log 2>&1
+  pulseaudio --start --exit-idle-time=12 >/tmp/relife-audio.log 2>&1
 fi
 if command -v nm-applet >/dev/null; then
   nm-applet >/tmp/relife-network.log 2>&1 &
