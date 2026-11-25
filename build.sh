@@ -37,6 +37,8 @@ pulseaudio
 pavucontrol
 network-manager-gnome
 mousepad
+bc
+xpdf
 xdg-utils
 xdotool
 python3
@@ -71,15 +73,9 @@ fi
 PROFILE
 # Project-owned lightweight UI, browser profile and touchpad settings.
 cp -a ../overlay/. config/includes.chroot/
-mkdir -p config/includes.chroot/tmp
-curl --fail --location --retry 3 https://github.com/JoseExposito/touchegg/releases/download/2.0.18/touchegg_2.0.18_amd64.deb -o config/includes.chroot/tmp/touchegg.deb
-sha256sum config/includes.chroot/tmp/touchegg.deb
 cat > config/hooks/live/0200-touchegg.hook.chroot <<'GESTURES'
 #!/bin/sh
 set -eu
-apt-get install -y --no-install-recommends /tmp/touchegg.deb
-rm /tmp/touchegg.deb
-systemctl enable touchegg.service
 mkdir -p /usr/lib/firefox-esr/distribution
 ln -sf /etc/firefox/policies/policies.json /usr/lib/firefox-esr/distribution/policies.json
 GESTURES
@@ -90,7 +86,7 @@ set -eu
 printf '\nPre-trim disk usage:\n'
 du -x -h -d 2 /usr /var | sort -h | tail -35
 apt-get clean
-rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/* /usr/share/man/* /usr/share/locale/*
+rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/* /usr/share/man/*
 find /usr/share/doc -type f ! -name copyright -delete
 printf '\nPost-trim disk usage:\n'
 du -x -h -d 2 /usr /var | sort -h | tail -35
@@ -104,6 +100,7 @@ MENU
 chmod +x config/hooks/live/0999-timeout.hook.binary
 lb build
 mkdir -p ../dist
-cp live-image-amd64.hybrid.iso ../dist/relife-ram-v0.2.0-amd64.iso
+cp live-image-amd64.hybrid.iso ../dist/ReLife-Extreme-Lite-x86_64.iso
+cp chroot/var/lib/dpkg/status ../dist/package-status.txt
 cd ../dist
 sha256sum *.iso > SHA256SUMS
