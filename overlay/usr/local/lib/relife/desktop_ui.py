@@ -41,6 +41,7 @@ def window_list():
 
 def panel(name, title):
     root = tk.Tk(className=name)
+    root.withdraw()
     root.title(title)
     appearance.configure(root)
     root.resizable(False, False)
@@ -55,6 +56,7 @@ def place(root, x=None, bottom=False):
         x = (root.winfo_screenwidth() - width) // 2
     y = root.winfo_screenheight() - height - 47 if bottom else (root.winfo_screenheight() - height) // 2
     root.geometry(f"+{max(x, 0)}+{max(y, 0)}")
+    root.deiconify()
 
 
 def start():

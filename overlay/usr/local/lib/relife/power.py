@@ -8,6 +8,7 @@ import appearance
 
 def main():
     root = tk.Tk(className="RelifePower")
+    root.withdraw()
     root.title("Kompüteri söndür")
     root.resizable(False, False)
     appearance.configure(root)
@@ -50,6 +51,7 @@ def main():
     x = (root.winfo_screenwidth() - root.winfo_reqwidth()) // 2
     y = (root.winfo_screenheight() - root.winfo_reqheight()) // 2
     root.geometry(f"+{max(0, x)}+{max(0, y)}")
+    root.deiconify()
     root.mainloop()
 
 

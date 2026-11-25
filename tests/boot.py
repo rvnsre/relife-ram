@@ -143,6 +143,7 @@ open_start() {
 open_start
 if [ -n "$start_window" ]; then
   as_student xdotool windowactivate --sync "$start_window"
+  sleep 2
   echo RELIFE_START_END
   sleep 2
   # "b" matches Şəbəkə with a keyboard layout independent ASCII keystroke.
