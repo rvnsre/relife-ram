@@ -44,7 +44,7 @@ sleep 5
 as_student() { runuser -u student -- env HOME=/home/student DISPLAY=:0 XAUTHORITY=/home/student/.Xauthority "$@"; }
 as_student relife-education >/tmp/relife-education.log 2>&1 &
 for n in $(seq 1 20); do
-  window=$(as_student xdotool search --onlyvisible --name 'ReLife.*Təhsil' | head -1)
+  window=$(as_student xdotool search --onlyvisible --classname '^relife-education$' | head -1)
   if [ -n "$window" ]; then
     echo RELIFE_EDUCATION_OK
     break
@@ -165,5 +165,5 @@ report = "VALIDATION-WINDOWS-UEFI.json" if args.disk else "VALIDATION.json"
 (OUT / report).write_text(json.dumps({'edition': args.edition, 'ram_mib': args.ram, 'hard_disks': int(bool(args.disk)), 'results': results,
     'limitations': ['Physical touchpad gestures require hardware validation.', 'No real-hardware shutdown, network browsing, media removal or pressure test.']}, indent=2))
 required = ["desktop", "education", "toram", "no_swap", "shutdown"]
-required += ["firefox"] if args.edition == "education" else ["idle_700mb_available", "idle_700mb_raw"]
+required += ["firefox"] if args.edition == "education" else ["idle_700mb_available"]
 raise SystemExit(0 if all(all(result[key] for key in required) for result in results) else 1)

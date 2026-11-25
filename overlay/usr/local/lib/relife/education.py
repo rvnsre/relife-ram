@@ -28,10 +28,12 @@ class Education:
         tabs = ttk.Notebook(root)
         tabs.pack(fill="both", expand=True, padx=12, pady=12)
         tabs.enable_traversal()
+        root.bind("<Control-plus>", lambda event: self.set_text_size(1))
+        root.bind("<Control-minus>", lambda event: self.set_text_size(-1))
         self.tabs = tabs
         for label, populate in (
             ("Kitabxana", self.library), ("Təkrar", self.flashcards), ("Müəllim", self.teacher),
-            ("Elm", self.science), ("Qeydlər", self.notes), ("Fokus", self.focus),
+            ("Elm", self.science), ("Plan", self.planner), ("Qeydlər", self.notes), ("Fokus", self.focus),
             ("Kömək", self.help), ("Onlayn AI", self.ai),
         ):
             pane = ttk.Frame(tabs, padding=12)
@@ -40,6 +42,11 @@ class Education:
         ttk.Label(root, text="RAM sessiyası bitməzdən əvvəl işinizi xarici yaddaşa ixrac edin.").pack(
             anchor="w", padx=14, pady=(0, 9)
         )
+
+    def set_text_size(self, delta):
+        for name in ("TkDefaultFont", "TkTextFont", "TkHeadingFont"):
+            current = font.nametofont(name)
+            current.configure(size=min(18, max(10, current.cget("size") + delta)))
 
     def entry(self, parent, label, value=""):
         ttk.Label(parent, text=label).pack(anchor="w")
@@ -56,7 +63,7 @@ class Education:
         return row
 
     def output(self, parent, height=4, editable=False):
-        box = tk.Text(parent, wrap="word", height=height, width=1, padx=6, pady=6)
+        box = tk.Text(parent, wrap="word", height=height, width=1, padx=6, pady=6, font="TkTextFont")
         box.pack(fill="both", expand=True, pady=(2, 7))
         if not editable:
             box.configure(state="disabled")
@@ -205,8 +212,23 @@ class Education:
             except ValueError as error:
                 messagebox.showerror("Plan hazırlanmadı", str(error))
 
-        self.actions(pane, ("Planı hazırla", plan),
-                     ("Mətn kimi ixrac et", lambda: self.export(result.get("1.0", "end-1c"), "ders-plani.txt")))
+        def worksheet():
+            catalog = [lesson for lesson in learning.lessons()
+                       if not subject.get().strip() or subject.get().casefold().strip() in lesson["subject"].casefold()]
+            if not catalog:
+                messagebox.showinfo("İş vərəqi", "Daxil etdiyin fənn üzrə hazır sual tapılmadı.")
+                return
+            title = topic.get().strip() or "Təkrar sualları"
+            questions = "\n\n".join(f'{index}. {item["question"]}\nCavab: ____________________'
+                                    for index, item in enumerate(catalog, 1))
+            answers = "\n".join(f'{index}. {item["answer"]} — {item["explanation"]}'
+                                for index, item in enumerate(catalog, 1))
+            self.show(result, f"{title}\n\n{questions}")
+            if messagebox.askyesno("İş vərəqi", "Cavab açarını ayrıca fayla ixrac edək?"):
+                self.export(f"{title} · Cavab açarı\n\n{answers}", "cavab-acari.txt")
+
+        self.actions(pane, ("Planı hazırla", plan), ("İş vərəqi hazırla", worksheet),
+                     ("Mətn kimi ixrac et", lambda: self.export(result.get("1.0", "end-1c"), "ders-materiali.txt")))
 
     def science(self, pane):
         formulas = ttk.Combobox(pane, state="readonly", values=list(learning.LABS))
@@ -231,6 +253,41 @@ class Education:
         values.bind("<Return>", lambda event: calculate())
         self.actions(pane, ("Hesabla", calculate))
         ttk.Label(pane, textvariable=result).pack(anchor="w")
+
+    def planner(self, pane):
+        subject = self.entry(pane, "Fənn")
+        task = self.entry(pane, "Tapşırıq və ya öyrənmə məqsədi")
+        tasks = tk.Listbox(pane, activestyle="dotbox", selectmode="browse")
+        tasks.pack(fill="both", expand=True, pady=(2, 7))
+        records = []
+
+        def add():
+            field, title = subject.get().strip(), task.get().strip()
+            if not field or not title:
+                return
+            records.append([field, title, False])
+            tasks.insert("end", f"□ {field} · {title}")
+            task.delete(0, "end")
+
+        def complete():
+            selection = tasks.curselection()
+            if not selection:
+                return
+            index, = selection
+            field, title, done = records[index]
+            records[index][2] = not done
+            tasks.delete(index)
+            marker = "□" if done else "✓"
+            tasks.insert(index, f"{marker} {field} · {title}")
+            tasks.selection_set(index)
+
+        def export():
+            lines = ["Günün təhsil planı", ""]
+            lines.extend(f'{"[x]" if done else "[ ]"} {field} · {title}' for field, title, done in records)
+            self.export("\n".join(lines), "gunun-plani.txt")
+
+        task.bind("<Return>", lambda event: add())
+        self.actions(pane, ("Əlavə et", add), ("Tamamlandı / geri al", complete), ("Planı ixrac et", export))
 
     def notes(self, pane):
         ttk.Label(pane, text="Qeyd dəftəri").pack(anchor="w")
@@ -271,9 +328,10 @@ class Education:
                      ("Fasilə", lambda: begin(rest, "Fasilə")), ("Dayandır", stop))
 
     def help(self, pane):
+        self.help_pane = pane
         text = self.output(pane)
         self.show(text, "Başla menyusu vasitəsilə proqramları aç. Super+E fayl menecerini açır. "
-                  "Alt+Tab açıq pəncərələr arasında keçir.\n\n"
+                  "Alt+Tab açıq pəncərələr arasında keçir. Ctrl+ və Ctrl− təhsil mərkəzinin mətn ölçüsünü dəyişir.\n\n"
                   "Kitabxana və laboratoriya internetsiz işləyir. Bir dərsi oxu, sualı cavablandır "
                   "və səhv etdiyin mövzunu Təkrar bölməsində karta çevir.\n\n"
                   "İşini bitirəndə faylın saxlandığı yeri yoxla. RAM sessiyasındakı fayllar "
@@ -303,8 +361,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--help-page", action="store_true")
     args = parser.parse_args()
-    root = tk.Tk()
+    root = tk.Tk(baseName="relife-education")
     app = Education(root)
     if args.help_page:
-        app.tabs.select(6)
+        app.tabs.select(app.help_pane)
     root.mainloop()

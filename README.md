@@ -11,7 +11,7 @@ provide a bottom taskbar, a Start menu and labelled desktop shortcuts.
 On either image open **Təhsil mərkəzi** from the desktop or Start menu. The
 bundled Azerbaijani library includes maths, physics, statistics, agronomy,
 English and digital literacy exercises. The center also has cards with spaced
-repetition, text export, a lesson planner, science calculations and a focus
+repetition, text export, lesson plans, a worksheet builder, a daily planner, science calculations and a focus
 timer. Export work before closing the app or powering off. Live sessions use a
 volatile overlay, load the compressed system into RAM and start without
 persistence or physical disk swap.
@@ -48,8 +48,9 @@ On a Debian host with QEMU, OVMF and Pillow run `python3 tests/boot.py
 extreme-lite --ram 1024` or `python3 tests/boot.py education --ram 2048`.
 CI captures BIOS and UEFI graphics, checks the desktop and Education Center
 with networking disconnected, and verifies shutdown. The Extreme Lite gate
-checks both idle RAM metrics against 700,000,000 bytes. The result JSON states
-the VM RAM allocation and both metrics. There is a separate FAT32 boot test.
+uses MemTotal minus MemAvailable and checks it against 700,000,000 bytes.
+The result JSON also records MemTotal minus MemFree, which includes reclaimable
+cache, and states the VM RAM allocation. There is a separate FAT32 boot test.
 Historical measurements remain in [VALIDATION.md](VALIDATION.md).
 
 For the Windows USB-free UEFI flow, see [Windows Boot Setup](windows/README.md).
@@ -59,3 +60,6 @@ touchpad support depend on the device. Student login on the live console is
 
 Project scripts and assets are GPL-3.0-only. Bundled Debian packages retain
 their original licenses.
+
+See the [education roadmap](docs/EDUCATION-ROADMAP.md) for the status of all
+150 requirements.

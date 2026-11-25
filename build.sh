@@ -129,6 +129,9 @@ set -eu
 sed -i 's/^timeout .*/timeout 50/' isolinux/isolinux.cfg
 MENU
 chmod +x config/hooks/live/0999-timeout.hook.binary
+if [ "$edition" = extreme-lite ]; then
+  export MKSQUASHFS_OPTIONS="-b 1M -Xbcj x86"
+fi
 lb build
 out="../../dist/$edition"
 mkdir -p "$out"
