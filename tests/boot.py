@@ -156,23 +156,7 @@ fi
 if command -v firefox-esr >/dev/null; then
 as_student xdotool search --onlyvisible --name '^ReLife.*T' windowclose
 as_student xdotool search --onlyvisible --name '^student$' windowclose
-as_student relife-firefox >/tmp/relife-browser.log 2>&1 &
-for n in $(seq 1 100); do
-  home_window=$(as_student xdotool search --onlyvisible --name '^ReLife [|]' | head -1)
-  [ -z "$home_window" ] || break
-  sleep 1
-done
-if [ -n "$home_window" ]; then
-  echo RELIFE_HOME_OK
-  sleep 4
-  as_student timeout 6 xdotool windowactivate --sync "$home_window"
-  as_student xdotool key ctrl+l
-  as_student xdotool type http://10.0.2.2:RELIFE_TEST_PORT/browser
-  as_student xdotool key Return
-else
-  as_student xprop -root _NET_CLIENT_LIST
-  cat /tmp/relife-browser.log
-fi
+as_student relife-firefox http://10.0.2.2:RELIFE_TEST_PORT/browser >/tmp/relife-browser.log 2>&1 &
 for n in $(seq 1 90); do
   browser_window=$(as_student xdotool search --onlyvisible --name '^ReLife Network Probe' | head -1)
   [ -z "$browser_window" ] || break
@@ -187,6 +171,25 @@ sleep 5
 if [ -n "$browser_window" ]; then
   as_student timeout 6 xdotool windowactivate --sync "$browser_window"
   as_student xdotool key alt+F4
+  for n in $(seq 1 25); do
+    pgrep -u student -x firefox-esr >/dev/null || break
+    sleep 1
+  done
+as_student relife-firefox >/tmp/relife-home.log 2>&1 &
+for n in $(seq 1 70); do
+  home_window=$(as_student xdotool search --onlyvisible --name '^ReLife [|]' | head -1)
+  [ -z "$home_window" ] || break
+  sleep 1
+done
+if [ -n "$home_window" ]; then
+  echo RELIFE_HOME_OK
+  sleep 4
+  as_student timeout 6 xdotool windowactivate --sync "$home_window"
+  as_student xdotool key alt+F4
+else
+  as_student xprop -root _NET_CLIENT_LIST
+  cat /tmp/relife-home.log
+fi
 fi
 fi
 open_start
@@ -271,7 +274,7 @@ def boot(mode):
     stage = 0
     seen_idle = seen_browser = seen_education = seen_files = seen_start = seen_switch = seen_network_panel = False
     seen_home = False
-    deadline = time.monotonic() + 420
+    deadline = time.monotonic() + 540
     heartbeat = time.monotonic()
     try:
         while proc.poll() is None and time.monotonic() < deadline:
