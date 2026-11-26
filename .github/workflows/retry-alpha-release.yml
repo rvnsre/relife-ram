@@ -11,9 +11,9 @@ concurrency:
   group: relife-alpha-release-recovery
   cancel-in-progress: true
 env:
-  RUN_ID: '45708971873'
-  SOURCE_SHA: f669898fffe58d5397278e0989dc9047ebca86db
-  TAG_NAME: v0.3.0-alpha.5
+  RUN_ID: '45726828022'
+  SOURCE_SHA: e78d095684f8f228b3620184a638c9a978452146
+  TAG_NAME: v0.3.0-alpha.6
 jobs:
   publish:
     runs-on: ubuntu-24.04
@@ -78,7 +78,7 @@ jobs:
           cp "$lite/bios-network.png" release/ReLife-Network.png
           (cd release && sha256sum *.iso *.exe *.zip > SHA256SUMS)
           cat > /tmp/relife-release-notes.md <<'NOTES'
-          ReLife RAM Alpha 5 includes a new light desktop theme, original violet artwork and an app search in Start. The window picker, network and power panels and education tools share the new palette and typography.
+          ReLife RAM Alpha 6 includes a dark taskbar, a searchable Start, a native network flyout and a window gallery. The tray shows the time, date, keyboard layout and connection status. The light app surfaces use a shared palette and the desktop artwork is original.
 
           Both images use XZ boot archives and 1 MiB SquashFS blocks with the x86 filter. Extreme Lite starts Firefox ESR on the 1 GiB BIOS and UEFI test VMs and uses compressed memory without disk swap. The attached reports include idle RAM, the Firefox network-page test, Start search and graphical shutdown. Physical Wi-Fi and touchpad support depend on the device.
 
@@ -92,7 +92,7 @@ jobs:
             if [ -n "$release_info" ]; then break; fi
             if release_info=$(gh api "repos/$GITHUB_REPOSITORY/releases" -X POST \
               -f tag_name="$TAG_NAME" -f target_commitish="$GITHUB_SHA" \
-              -f name='ReLife RAM v0.3.0 Alpha 5' -f body=@/tmp/relife-release-notes.md \
+              -f name='ReLife RAM v0.3.0 Alpha 6' -f body=@/tmp/relife-release-notes.md \
               -F draft=true -F prerelease=true); then break; fi
             sleep "$((attempt * 5))"
             release_info=$(lookup)
