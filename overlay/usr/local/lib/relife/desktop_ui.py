@@ -31,7 +31,7 @@ def window_list():
     windows = []
     for window_id in reversed(candidates):
         info = command("xprop", "-notype", "-id", window_id,
-                       "_NET_WM_NAME", "WM_NAME", "_NET_WM_DESKTOP",
+                       "_NET_WM_NAME", "WM_NAME", "WM_CLASS", "_NET_WM_DESKTOP",
                        "_NET_WM_STATE", "_NET_WM_WINDOW_TYPE")
         if info.returncode or any(kind in info.stdout for kind in (
             "_NET_WM_STATE_SKIP_TASKBAR", "_NET_WM_WINDOW_TYPE_DESKTOP", "_NET_WM_WINDOW_TYPE_DOCK"
@@ -41,7 +41,13 @@ def window_list():
         if desktop and current_desktop and desktop[1] not in (current_desktop, "4294967295"):
             continue
         title = re.search(r'^(_NET_WM_NAME|WM_NAME) = "(.*)"$', info.stdout, re.M)
-        windows.append((window_id, title[2] if title else "Adsız pəncərə"))
+        wm_class = re.search(r'^WM_CLASS = (.*)$', info.stdout, re.M)
+        app = wm_class[1].lower() if wm_class else ""
+        icon = next((icon for key, icon in (
+            ("firefox", "internet"), ("pcmanfm", "files"), ("mousepad", "write"),
+            ("education", "education"), ("network", "network"), ("sound", "sound"),
+            ("help", "help")) if key in app), "windows")
+        windows.append((window_id, title[2] if title else "Adsız pəncərə", icon))
     return windows
 
 
@@ -96,7 +102,15 @@ def dark_label(parent, text=None, *, variable=None, bg=DARK, fg=WHITE, size=10, 
 
 def dark_button(parent, label, callback, *, bg=CARD, icon=None, icon_size=32, **kwargs):
     suffix = "-24" if icon_size == 24 else ""
-    image = tk.PhotoImage(master=parent, file=f"{ICONS}{icon}{suffix}.png") if icon else None
+    image = None
+    if icon:
+        root = parent.winfo_toplevel()
+        if not hasattr(root, "relife_images"):
+            root.relife_images = {}
+        key = icon + suffix
+        if key not in root.relife_images:
+            root.relife_images[key] = tk.PhotoImage(master=root, file=f"{ICONS}{key}.png")
+        image = root.relife_images[key]
     button = tk.Button(parent, text=label, image=image, compound="left", command=callback,
                        bg=bg, fg=WHITE, activebackground="#2d2d2d", activeforeground=WHITE,
                        bd=0, relief="flat", highlightthickness=1, highlightbackground=bg,
@@ -202,7 +216,7 @@ def start():
     root.bind("<Down>", lambda event: focus(1))
     search.bind("<Return>", activate_first)
     root.bind("<Alt-p>", lambda event: open_app("relife-power-menu"))
-    dark_label(tiles, "ReLife Mərkəzi", bg="#202020", fg=SOFT, bold=True).grid(
+    dark_label(tiles, "Tez aç", bg="#202020", fg=SOFT, bold=True).grid(
         row=0, columnspan=2, sticky="ew", pady=(4, 12))
     tile_apps = (7, 2, 1, 4, 6, 0, 3)
     cells = ((1, 0, 2), (2, 0, 1), (2, 1, 1), (3, 0, 1), (3, 1, 1), (4, 0, 1), (4, 1, 1))
@@ -258,7 +272,7 @@ def switch(direction):
     canvas.create_window(0, 0, window=cards, anchor="nw", width=width)
     cards.bind("<Configure>", lambda event: canvas.configure(scrollregion=canvas.bbox("all")))
     controls = []
-    selected = next((i for i, (wid, _) in enumerate(windows) if str(int(wid, 16)) == active), 0)
+    selected = next((i for i, (wid, _, _) in enumerate(windows) if str(int(wid, 16)) == active), 0)
     offset = {"left": -1, "right": 1}.get(direction, 0)
     selected = (selected + offset) % len(windows)
 
@@ -284,18 +298,19 @@ def switch(direction):
             canvas.yview_moveto(max(0, selected - 3) / len(windows))
         return "break"
 
-    for index, (_, title) in enumerate(windows):
+    for index, (_, title, icon) in enumerate(windows):
         row = tk.Frame(cards, bg=DARK, height=48)
         row.pack(fill="x")
         row.pack_propagate(False)
         label = title if len(title) <= 43 else title[:42] + "…"
         button = dark_button(row, label, lambda index=index: activate(index),
-                             icon="windows", anchor="w", padx=5)
+                             icon=icon, anchor="w", padx=5)
         button.pack(side="left", fill="both", expand=True, pady=(0, 4))
         controls.append(button)
         dark_button(row, "×", lambda index=index: close(index), padx=10).pack(
             side="right", fill="y", padx=(4, 0), pady=(0, 4))
-    dark_button(body, "Keç", lambda: activate(selected), bg="#005a9e",
+    dark_label(body, "Oxlarla seç · Enter ilə aç · Esc ilə çıx", fg=SOFT).pack(anchor="w", pady=(10, 0))
+    dark_button(body, "Seçilmiş pəncərəni aç", lambda: activate(selected), bg="#005a9e",
                 padx=20, pady=6).pack(anchor="e", pady=(10, 0))
     for key, step in (("Left", -1), ("Up", -1), ("Right", 1), ("Down", 1)):
         root.bind(f"<{key}>", lambda event, step=step: select((selected + step) % len(windows)))

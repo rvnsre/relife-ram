@@ -5,6 +5,8 @@
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <glob.h>
+#include <linux/rtnetlink.h>
+#include <sys/socket.h>
 #include <poll.h>
 #include <signal.h>
 #include <stdio.h>
@@ -158,13 +160,29 @@ int main(void)
     else
         font = XQueryFont(display, XGContextFromGC(gc));
     XFlush(display);
-    struct pollfd connection = {.fd = ConnectionNumber(display), .events = POLLIN};
+    int route = socket(AF_NETLINK, SOCK_RAW | SOCK_CLOEXEC | SOCK_NONBLOCK, NETLINK_ROUTE);
+    struct sockaddr_nl address = {.nl_family = AF_NETLINK, .nl_groups = RTMGRP_LINK};
+    if (route >= 0 && bind(route, (struct sockaddr *)&address, sizeof address) < 0) {
+        close(route);
+        route = -1;
+    }
+    int xkb_opcode, xkb_event = -100, xkb_error;
+    int major = XkbMajorVersion, minor = XkbMinorVersion;
+    if (XkbQueryExtension(display, &xkb_opcode, &xkb_event, &xkb_error, &major, &minor))
+        XkbSelectEvents(display, XkbUseCoreKbd, XkbStateNotifyMask, XkbStateNotifyMask);
+    struct pollfd sources[] = {
+        {.fd = ConnectionNumber(display), .events = POLLIN},
+        {.fd = route, .events = POLLIN}
+    };
+    int dirty = 1;
     for (;;) {
         while (XPending(display)) {
             XEvent event;
             XNextEvent(display, &event);
             if (event.type == DestroyNotify)
                 return 0;
+            if (event.type == Expose || event.type == ConfigureNotify || event.type == xkb_event)
+                dirty = 1;
             if (event.type != ButtonPress || event.xbutton.button != Button1)
                 continue;
             int x = event.xbutton.x;
@@ -172,7 +190,13 @@ int main(void)
                 run("relife-desktop", "network");
             else if (x < 40)
                 run("relife-sound", NULL);
-            else if (x >= 55 && x < 72)
+            else if (x < 55) {
+                XkbStateRec state;
+                if (XkbGetState(display, XkbUseCoreKbd, &state) == Success)
+                    XkbLockGroup(display, XkbUseCoreKbd, state.group == 0 ? 1 : 0);
+                dirty = 1;
+            }
+            else if (x < 72)
                 run("relife-desktop", "system");
             else if (x >= 72 && x < WIDTH-7)
                 run("relife-desktop", "calendar");
@@ -195,7 +219,24 @@ int main(void)
                 XSendEvent(display, root, False, SubstructureNotifyMask | SubstructureRedirectMask, &toggle);
             }
         }
-        paint();
-        poll(&connection, 1, 3000);
+        if (dirty)
+            paint();
+        dirty = 0;
+        /* A synchronous Xlib call can buffer events before the socket poll. */
+        if (XPending(display))
+            continue;
+        struct timespec now;
+        clock_gettime(CLOCK_REALTIME, &now);
+        int timeout = (60 - now.tv_sec % 60) * 1000 - now.tv_nsec / 1000000;
+        if (route < 0 && timeout > 3000)
+            timeout = 3000;
+        int ready = poll(sources, 2, timeout);
+        if (ready == 0)
+            dirty = 1;
+        if (sources[1].revents & POLLIN) {
+            char buffer[8192];
+            while (recv(route, buffer, sizeof buffer, 0) > 0) {}
+            dirty = 1;
+        }
     }
 }

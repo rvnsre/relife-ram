@@ -170,6 +170,15 @@ echo RELIFE_BROWSER_END
 sleep 5
 if [ -n "$browser_window" ]; then
   as_student timeout 6 xdotool windowactivate --sync "$browser_window"
+  as_student xdotool key alt+Home
+  for n in $(seq 1 20); do
+    if as_student xdotool getwindowname "$browser_window" | grep -q '^ReLife · Dərs'; then
+      echo RELIFE_HOME_OK
+      sleep 4
+      break
+    fi
+    sleep 1
+  done
   as_student xdotool key alt+F4
 fi
 fi
@@ -254,6 +263,7 @@ def boot(mode):
     reader.start()
     stage = 0
     seen_idle = seen_browser = seen_education = seen_files = seen_start = seen_switch = seen_network_panel = False
+    seen_home = False
     deadline = time.monotonic() + 420
     heartbeat = time.monotonic()
     try:
@@ -289,6 +299,9 @@ def boot(mode):
             if not seen_switch and 'RELIFE_SWITCHER_END' in text:
                 screenshot(qmp, OUT / f'{mode}-switcher.ppm')
                 seen_switch = True
+            if not seen_home and 'RELIFE_HOME_OK' in text:
+                screenshot(qmp, OUT / f'{mode}-home.ppm')
+                seen_home = True
             if not seen_browser and 'RELIFE_BROWSER_END' in text:
                 screenshot(qmp, OUT / f'{mode}-firefox.ppm'); seen_browser = True
             if time.monotonic() - heartbeat >= 30:
@@ -314,7 +327,7 @@ def boot(mode):
             cpu_usage.append(round(100 * (1 - (delta[3] + delta[4]) / sum(delta)), 2))
     free_lines = re.search(r'^\s*total\s+used\s+free\s+shared\s+buff/cache\s+available\r?\nMem:[^\r\n]+\r?\nSwap:[^\r\n]+', text, re.M)
     result = {'mode': mode, 'idle_cpu_samples_percent': cpu_usage, 'desktop': seen_idle, 'gesture_services': 'RELIFE_GESTURES_OK' in text, 'firefox': 'RELIFE_BROWSER_OK' in text,
-              'network': 'RELIFE_NETWORK_OK' in text, 'switcher': 'RELIFE_SWITCHER_OK' in text,
+              'home': seen_home, 'network': 'RELIFE_NETWORK_OK' in text, 'switcher': 'RELIFE_SWITCHER_OK' in text,
               'start_search': 'RELIFE_START_SEARCH_OK' in text, 'tray': 'RELIFE_TRAY_OK' in text,
               'free_m': free_lines[0].strip("\r\n") if free_lines else None,
               'education': bool(re.search(r'^RELIFE_EDUCATION_OK\r?$', text, re.M)),
@@ -332,7 +345,7 @@ report = "VALIDATION-WINDOWS-UEFI.json" if args.disk else "VALIDATION.json"
 (OUT / report).write_text(json.dumps({'edition': args.edition, 'ram_mib': args.ram, 'hard_disks': int(bool(args.disk)), 'results': results,
     'limitations': ['Physical touchpad gestures require hardware validation.', 'Networking test checks DHCP and HTTP in Firefox through QEMU. Physical Wi-Fi, captive portals and public internet need separate validation.']}, indent=2))
 required = ["desktop", "education", "toram", "no_disk_swap", "shutdown"]
-required += ["firefox", "gesture_services", "network", "start_search", "switcher", "tray"]
+required += ["home", "firefox", "gesture_services", "network", "start_search", "switcher", "tray"]
 if args.edition == "extreme-lite" and args.ram == 1024:
     required += ["zram", "idle_700mb_available"]
 raise SystemExit(0 if all(all(result[key] for key in required) for result in results) else 1)

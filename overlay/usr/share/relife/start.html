@@ -1,23 +1,46 @@
 <!doctype html>
 <html lang="az">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>ReLife · İnternet</title>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ReLife · Dərs və axtarış</title>
 <style>
-:root{color-scheme:light;font:16px system-ui,sans-serif;background:#f3f3f3;color:#1a1a1a}
-body{margin:0}header{background:#191919;color:#fff;padding:1.3rem max(1.25rem,calc((100vw - 55rem)/2))}
-main{max-width:55rem;margin:3rem auto;padding:0 1.25rem}h1{font-size:2rem;margin:0 0 1.15rem}
-form{display:flex;gap:.5rem;margin-bottom:2.25rem}input,button{font:inherit;border:1px solid #767676;border-radius:2px;padding:.7rem}
-input{flex:1;min-width:0}button{background:#005a9e;color:white;cursor:pointer}
-nav{display:grid;grid-template-columns:repeat(auto-fit,minmax(12rem,1fr));gap:.65rem}
-a{padding:1rem;background:#fff;border:1px solid #ddd;color:#005a9e;text-decoration:none}
-a:hover{background:#e6f3fc}a:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid #0078d4;outline-offset:2px}
-a span{display:block;color:#5c5c5c;margin-top:.4rem;font-size:.9rem}
-</style></head>
-<body><header>ReLife</header><main>
-<h1>İnternetdə axtar</h1>
+:root {font:16px/1.5 system-ui,sans-serif;color:#192f46;background:#f1f5f8;color-scheme:light}
+* {box-sizing:border-box}
+body {margin:0}
+header {border-bottom:1px solid #cedbe4;background:#fff}
+header div, main {width:min(58rem,92%);margin:auto}
+header div {display:flex;align-items:center;gap:.65rem;height:3.7rem;font-weight:650}
+header img {width:28px;height:28px}
+main {padding:clamp(1rem,4vw,3rem) 0}
+h1,h2,p {margin:0}
+h1 {font-size:clamp(1.6rem,4vw,2.6rem);line-height:1.16}
+h2 {font-size:1.25rem;margin:1.7rem 0 .7rem}
+.lesson {padding:clamp(1.25rem,4vw,2.7rem);border-radius:14px;color:white;background:linear-gradient(120deg,#123653,#0d5361)}
+.lesson p {color:#e0f1f2;margin:.6rem 0 1.2rem}
+.primary, button {display:inline-block;border:0;border-radius:6px;font:inherit;font-weight:650;padding:.7rem 1rem;cursor:pointer}
+.primary {color:#103c4b;background:white;text-decoration:none}
+form {display:flex;gap:.5rem}
+input {flex:1;min-width:0;border:1px solid #738698;border-radius:6px;padding:.75rem;font:inherit}
+button {color:white;background:#155682}
+nav {display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,14rem),1fr));gap:.7rem}
+nav a {display:block;padding:1rem;border:1px solid #c3d1db;background:white;border-radius:8px;color:#164f76;text-decoration:none;font-weight:650}
+nav span {display:block;margin-top:.2rem;font-weight:400;color:#425667}
+a:hover {text-decoration:underline}
+:focus-visible {outline:3px solid #e79000;outline-offset:3px}
+</style>
+</head>
+<body>
+<header><div><img src="file:///usr/share/icons/relife/education.png" alt="">ReLife</div></header>
+<main>
+<section class="lesson"><h1>Dərsə başla</h1>
+<p>İnternetsiz məşq et, qeydlər yaz və elm alətlərindən istifadə et.</p>
+<a class="primary" href="education.html">Təhsil mərkəzini aç</a></section>
+<h2><label for="query">İnternetdə axtar</label></h2>
 <form action="https://www.google.com/search" method="get">
-<input type="search" name="q" aria-label="Axtarış sözü" placeholder="Mövzu və ya sual yaz" required><button>Axtar</button>
-</form><h2>Təhsil</h2><nav aria-label="Təhsil keçidləri">
-<a href="https://www.khanacademy.org/">Khan Academy<span>Riyaziyyat və təbiət elmləri</span></a>
-<a href="https://az.wikipedia.org/">Vikipediya<span>Azərbaycan dilində ensiklopediya</span></a>
+<input id="query" type="search" name="q" placeholder="Mövzu və ya sual yaz" required><button>Axtar</button></form>
+<h2 id="online">Onlayn dərs mənbələri</h2><nav aria-labelledby="online">
 <a href="https://www.e-derslik.edu.az/">Elektron dərsliklər<span>Məktəb dərslikləri</span></a>
+<a href="https://az.wikipedia.org/">Vikipediya<span>Azərbaycan dilində ensiklopediya</span></a>
+<a href="https://www.khanacademy.org/">Khan Academy<span>Riyaziyyat və təbiət elmləri</span></a>
 </nav></main></body></html>
