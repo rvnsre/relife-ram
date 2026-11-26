@@ -362,11 +362,11 @@ def network():
     status = tk.StringVar()
     dark_label(body, variable=status, bg="#1f1f1f", fg=SOFT, height=2, wraplength=310).pack(fill="x")
     rows = []
-    wifi_devices = []
+    wifi_devices = {}
     results = queue.Queue()
     busy = False
 
-    def snapshot():
+    def snapshot(rescan):
         devices = [nm_fields(line) for line in nmcli(
             "-t", "-f", "DEVICE,TYPE,STATE,CONNECTION", "device", "status").splitlines()]
         adapters = [item for item in devices if len(item) == 4 and item[1] in ("wifi", "ethernet")]
@@ -382,21 +382,27 @@ def network():
                 summary += f"\nKeçid  {details[1]}"
         visible = [(name or dev, dev, state, "ethernet") for dev, kind, state, name in adapters if kind == "ethernet"]
         if any(kind == "wifi" for _, kind, _, _ in adapters):
-            scan = nmcli("-t", "-f", "SSID,SIGNAL,SECURITY,IN-USE", "device", "wifi", "list", "--rescan", "no")
-            names = set()
+            scan = nmcli("-t", "-f", "SSID,SIGNAL,SECURITY,IN-USE,DEVICE", "device", "wifi",
+                         "list", "--rescan", "yes" if rescan else "auto", timeout=25)
+            networks = {}
+            active_wifi = {}
             for line in scan.splitlines():
                 item = nm_fields(line)
-                if len(item) == 4 and item[0] and item[0] not in names:
-                    name, level, security, used = item
-                    names.add(name)
-                    visible.append((f"{name}  {level}%", name, "connected" if used == "*" else security, "wifi"))
-        return summary, visible, [device for device, kind, state, _ in current if kind == "wifi"]
+                if len(item) == 5 and item[0]:
+                    name, level, security, used, device = item
+                    if used == "*":
+                        active_wifi[name] = device
+                    if used == "*" or name not in networks:
+                        networks[name] = (f"{name}  {level}%", name, "connected" if used == "*" else security, "wifi")
+            visible.extend(networks.values())
+            return summary, visible, active_wifi
+        return summary, visible, {}
 
-    def work(args):
+    def work(args, rescan):
         try:
             if args:
                 nmcli("--wait", "12", *args, timeout=14)
-            results.put((snapshot(), ""))
+            results.put((snapshot(rescan), ""))
         except (OSError, subprocess.SubprocessError):
             results.put((None, "Əməliyyat alınmadı. Şəbəkə seçimini açıb yenidən yoxla."))
 
@@ -411,20 +417,21 @@ def network():
         status.set(message)
         if result:
             summary, visible, active_wifi = result
-            wifi_devices[:] = active_wifi
+            wifi_devices.clear()
+            wifi_devices.update(active_wifi)
             connected.set(summary)
             rows[:] = visible
             entries.delete(0, "end")
             for name, _, state, kind in rows:
                 entries.insert("end", f"{'●' if state == 'connected' else '○'}  {name}")
 
-    def refresh(*args):
+    def refresh(*args, rescan=False):
         nonlocal busy
         if busy:
             return
         busy = True
         status.set("Yoxlanılır…")
-        threading.Thread(target=work, args=(args,), daemon=True).start()
+        threading.Thread(target=work, args=(args, rescan), daemon=True).start()
         root.after(100, collect)
 
     def advanced():
@@ -439,7 +446,7 @@ def network():
         if kind == "ethernet":
             refresh("device", "disconnect" if state == "connected" else "connect", name)
         elif state == "connected":
-            refresh("device", "disconnect", next(iter(wifi_devices), name))
+            refresh("device", "disconnect", wifi_devices[name])
         elif state in ("", "--"):
             refresh("device", "wifi", "connect", name)
         else:
@@ -449,7 +456,7 @@ def network():
     row.pack(fill="x", pady=(7, 5))
     dark_button(row, "Qoşul / Ayır", join, bg="#005a9e", padx=8, pady=5).pack(side="left")
     dark_button(row, "Wi-Fi aç", lambda: refresh("radio", "wifi", "on"), padx=6, pady=5).pack(side="left", padx=4)
-    dark_button(row, "Yenilə", refresh, padx=6, pady=5).pack(side="left")
+    dark_button(row, "Yenilə", lambda: refresh(rescan=True), padx=6, pady=5).pack(side="left")
     dark_button(body, "Şəbəkə seçimi", advanced, anchor="w", pady=4).pack(fill="x")
     dark_button(body, "Giriş səhifəsini aç",
                 lambda: launch("relife-firefox", "http://detectportal.firefox.com/canonical.html"),

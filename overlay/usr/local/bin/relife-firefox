@@ -1,4 +1,7 @@
 #!/bin/sh
 set -eu
 profile=$(python3 /usr/local/lib/relife/firefox_profile.py)
+if [ "$#" -eq 0 ]; then
+    set -- file:///usr/share/relife/start.html
+fi
 exec firefox-esr --profile "$profile" "$@"
