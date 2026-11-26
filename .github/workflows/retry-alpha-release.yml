@@ -11,8 +11,8 @@ concurrency:
   group: relife-alpha-release-recovery
   cancel-in-progress: true
 env:
-  RUN_ID: '45727068748'
-  SOURCE_SHA: ca5d0b50baf0c0e2482538ee34e70b6080d1d572
+  RUN_ID: '45727329351'
+  SOURCE_SHA: b01df085febfa52b5b888951a4e13c4aa48c11b5
   TAG_NAME: v0.3.0-alpha.6
 jobs:
   publish:
