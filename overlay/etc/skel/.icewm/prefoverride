@@ -2,5 +2,5 @@ MenuFontNameXft="DejaVu Sans:size=12"
 TaskBarFontNameXft="DejaVu Sans:size=10"
 ClockFontNameXft="DejaVu Sans:size=10"
 TitleFontNameXft="DejaVu Sans:size=10:bold"
-SmallIconSize=28
+SmallIconSize=30
 LargeIconSize=32

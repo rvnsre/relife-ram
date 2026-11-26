@@ -224,58 +224,78 @@ def switch(direction):
     root = panel("RelifeSwitcher", "Açıq pəncərələr")
     root.attributes("-topmost", True)
     root.wm_attributes("-type", "dialog")
-    ttk.Label(root, text="Açıq pəncərələr", style="Header.TLabel").pack(fill="x")
-    body = ttk.Frame(root, padding=(22, 16))
-    body.pack(fill="both")
+    root.configure(bg=DARK)
+    body = tk.Frame(root, bg=DARK, padx=18, pady=15)
+    body.pack(fill="both", expand=True)
+    dark_label(body, "Açıq pəncərələr", size=17, bold=True).pack(fill="x", pady=(0, 12))
     if not windows:
-        ttk.Label(body, text="Hazırda açıq tətbiq yoxdur.").pack(pady=12, padx=40)
-        ttk.Button(body, text="Bağla", command=root.destroy).pack()
+        dark_label(body, "Hazırda açıq tətbiq yoxdur.", fg=SOFT).pack(pady=10)
+        dark_button(body, "Bağla", root.destroy, padx=12, pady=6).pack()
         place(root)
         root.mainloop()
         return
-    width = min(52, max(25, (root.winfo_screenwidth() - 84) // 9))
-    entries = tk.Listbox(body, width=width, height=min(len(windows), 8), activestyle="none",
-                         font=(appearance.FONT, 11), highlightthickness=1, highlightcolor=appearance.ACCENT,
-                         background="#ffffff", foreground=appearance.INK, highlightbackground=appearance.BORDER,
-                         selectbackground=appearance.TINT, selectforeground=appearance.INK, borderwidth=0)
-    entries.grid(row=0, column=0, sticky="nsew")
-    scroll = ttk.Scrollbar(body, orient="vertical", command=entries.yview)
-    scroll.grid(row=0, column=1, sticky="ns")
-    entries.configure(yscrollcommand=scroll.set)
-    for _, title in windows:
-        entries.insert("end", title)
 
-    def select(index):
-        entries.selection_clear(0, "end")
-        entries.selection_set(index)
-        entries.activate(index)
-        entries.see(index)
-
-    def move(step):
-        current = entries.curselection()
-        select(((current[0] if current else 0) + step) % len(windows))
-        return "break"
-
-    def activate(event=None):
-        row = entries.curselection()
-        if row:
-            window_id = windows[row[0]][0]
-            root.destroy()
-            command("xdotool", "windowactivate", window_id)
-        return "break"
-
+    area = tk.Frame(body, bg=DARK)
+    area.pack(fill="both", expand=True)
+    width = min(root.winfo_screenwidth() - 52, 475)
+    canvas = tk.Canvas(area, bg=DARK, bd=0, highlightthickness=0, width=width,
+                       height=min(len(windows), 5) * 48)
+    canvas.pack(side="left", fill="both", expand=True)
+    scrollbar = ttk.Scrollbar(area, orient="vertical", command=canvas.yview)
+    if len(windows) > 5:
+        scrollbar.pack(side="right", fill="y")
+    canvas.configure(yscrollcommand=scrollbar.set)
+    cards = tk.Frame(canvas, bg=DARK)
+    canvas.create_window(0, 0, window=cards, anchor="nw", width=width)
+    cards.bind("<Configure>", lambda event: canvas.configure(scrollregion=canvas.bbox("all")))
+    controls = []
     selected = next((i for i, (wid, _) in enumerate(windows) if str(int(wid, 16)) == active), 0)
     offset = {"left": -1, "right": 1}.get(direction, 0)
-    select((selected + offset) % len(windows))
-    entries.bind("<Left>", lambda event: move(-1))
-    entries.bind("<Right>", lambda event: move(1))
-    entries.bind("<Return>", activate)
-    entries.bind("<Double-Button-1>", activate)
-    root.bind("<Left>", lambda event: move(-1))
-    root.bind("<Right>", lambda event: move(1))
-    ttk.Button(body, text="Keç", command=activate, style="Primary.TButton").grid(row=1, column=0, sticky="e", pady=(10, 0))
+    selected = (selected + offset) % len(windows)
+
+    def activate(index):
+        window_id = windows[index][0]
+        root.destroy()
+        command("xdotool", "windowactivate", window_id)
+
+    def close(index):
+        window_id = windows[index][0]
+        root.destroy()
+        command("xdotool", "windowactivate", "--sync", window_id)
+        command("xdotool", "key", "alt+F4")
+        launch("relife-desktop", "switch")
+
+    def select(index):
+        nonlocal selected
+        controls[selected].configure(bg=CARD, highlightbackground=CARD)
+        selected = index
+        controls[selected].configure(bg="#005a9e", highlightbackground="#1a86d9")
+        root.update_idletasks()
+        if selected >= 4 or canvas.canvasy(0) > selected * 48:
+            canvas.yview_moveto(max(0, selected - 3) / len(windows))
+        return "break"
+
+    for index, (_, title) in enumerate(windows):
+        row = tk.Frame(cards, bg=DARK, height=48)
+        row.pack(fill="x")
+        row.pack_propagate(False)
+        label = title if len(title) <= 43 else title[:42] + "…"
+        button = dark_button(row, label, lambda index=index: activate(index),
+                             icon="windows", anchor="w", padx=5)
+        button.pack(side="left", fill="both", expand=True, pady=(0, 4))
+        controls.append(button)
+        dark_button(row, "×", lambda index=index: close(index), padx=10).pack(
+            side="right", fill="y", padx=(4, 0), pady=(0, 4))
+    dark_button(body, "Keç", lambda: activate(selected), bg="#005a9e",
+                padx=20, pady=6).pack(anchor="e", pady=(10, 0))
+    for key, step in (("Left", -1), ("Up", -1), ("Right", 1), ("Down", 1)):
+        root.bind(f"<{key}>", lambda event, step=step: select((selected + step) % len(windows)))
+    root.bind("<Return>", lambda event: activate(selected))
+    root.bind("<Button-4>", lambda event: canvas.yview_scroll(-1, "units"))
+    root.bind("<Button-5>", lambda event: canvas.yview_scroll(1, "units"))
     place(root)
-    entries.focus_set()
+    select(selected)
+    root.focus_set()
     root.mainloop()
 
 
@@ -317,6 +337,7 @@ def network():
     status = tk.StringVar()
     dark_label(body, variable=status, bg="#1f1f1f", fg=SOFT, wraplength=310).pack(fill="x")
     rows = []
+    wifi_devices = []
     results = queue.Queue()
     busy = False
 
@@ -344,7 +365,7 @@ def network():
                     name, level, security, used = item
                     names.add(name)
                     visible.append((f"{name}  {level}%", name, "connected" if used == "*" else security, "wifi"))
-        return summary, visible
+        return summary, visible, [device for device, kind, state, _ in current if kind == "wifi"]
 
     def work(args):
         try:
@@ -364,7 +385,8 @@ def network():
         busy = False
         status.set(message)
         if result:
-            summary, visible = result
+            summary, visible, active_wifi = result
+            wifi_devices[:] = active_wifi
             connected.set(summary)
             rows[:] = visible
             entries.delete(0, "end")
@@ -392,7 +414,7 @@ def network():
         if kind == "ethernet":
             refresh("device", "disconnect" if state == "connected" else "connect", name)
         elif state == "connected":
-            refresh("connection", "down", "id", name)
+            refresh("device", "disconnect", next(iter(wifi_devices), name))
         elif state in ("", "--"):
             refresh("device", "wifi", "connect", name)
         else:

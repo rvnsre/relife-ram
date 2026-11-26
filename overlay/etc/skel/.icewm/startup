@@ -9,5 +9,7 @@ fi
 if command -v nm-applet >/dev/null; then
   nm-applet >/tmp/relife-network.log 2>&1 &
 fi
+setxkbmap -layout us,az -option grp:alt_shift_toggle
+relife-tray >"$HOME/.relife-tray.log" 2>&1 &
 touchegg >"$HOME/.relife-gestures.log" 2>&1 &
 command -v firefox-esr >/dev/null && xdg-settings set default-web-browser relife-firefox.desktop >/dev/null 2>&1 || true

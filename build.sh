@@ -112,6 +112,7 @@ PROFILE
 cp -a ../../overlay/. config/includes.chroot/
 python3 ../../desktop/make-assets.py config/includes.chroot
 bash ../../scripts/build-touchegg.sh config/includes.chroot
+gcc -std=c11 -Os -Wall -Wextra -s ../../desktop/tray.c -lX11 -o config/includes.chroot/usr/local/bin/relife-tray
 mkdir -p config/includes.chroot/etc/systemd/system/multi-user.target.wants
 ln -sf ../touchegg.service config/includes.chroot/etc/systemd/system/multi-user.target.wants/touchegg.service
 if [ "$edition" = extreme-lite ]; then

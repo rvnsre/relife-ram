@@ -35,6 +35,11 @@ for n in $(seq 1 7); do
   sleep 2
 done
 echo RELIFE_IDLE_BEGIN
+if pgrep -u student -x relife-tray >/dev/null; then
+  echo RELIFE_TRAY_OK
+else
+  cat /home/student/.relife-tray.log
+fi
 if systemctl is-active --quiet touchegg && pgrep -u student -x touchegg >/dev/null; then
   echo RELIFE_GESTURES_OK
 else
@@ -310,7 +315,7 @@ def boot(mode):
             cpu_usage.append(round(100 * (1 - (delta[3] + delta[4]) / sum(delta)), 2))
     result = {'mode': mode, 'idle_cpu_samples_percent': cpu_usage, 'desktop': seen_idle, 'gesture_services': 'RELIFE_GESTURES_OK' in text, 'firefox': 'RELIFE_BROWSER_OK' in text,
               'network': 'RELIFE_NETWORK_OK' in text, 'switcher': 'RELIFE_SWITCHER_OK' in text,
-              'start_search': 'RELIFE_START_SEARCH_OK' in text,
+              'start_search': 'RELIFE_START_SEARCH_OK' in text, 'tray': 'RELIFE_TRAY_OK' in text,
               'education': bool(re.search(r'^RELIFE_EDUCATION_OK\r?$', text, re.M)),
               'toram': 'RELIFE_TORAM_OK' in text, 'no_swap': 'RELIFE_SWAP_OK' in text,
               'no_disk_swap': 'RELIFE_NO_DISK_SWAP_OK' in text, 'zram': 'RELIFE_ZRAM_OK' in text,
