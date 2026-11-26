@@ -96,9 +96,14 @@ def main():
     theme = dest / "icons/ReLife"
     (theme / "scalable/places").mkdir(parents=True, exist_ok=True)
     (theme / "index.theme").write_text(
-        "[Icon Theme]\nName=ReLife\nInherits=Adwaita,hicolor\nDirectories=scalable/places\n"
+        "[Icon Theme]\nName=ReLife\nInherits=Adwaita,hicolor\nDirectories=scalable/places,scalable/emblems\n"
         "[scalable/places]\nSize=48\nMinSize=16\nMaxSize=256\nType=Scalable\nContext=Places\n"
+        "[scalable/emblems]\nSize=16\nMinSize=8\nMaxSize=64\nType=Scalable\nContext=Emblems\n"
     )
+    emblems = theme / "scalable/emblems"
+    emblems.mkdir(parents=True, exist_ok=True)
+    (emblems / "emblem-symbolic-link.svg").write_text(
+        '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"/>')
     (theme / "scalable/places/folder.svg").write_text((dest / "icons/relife/files.svg").read_text())
     for name in ("folder-open", "folder-documents", "folder-download", "folder-desktop", "user-home"):
         alias = theme / f"scalable/places/{name}.svg"
