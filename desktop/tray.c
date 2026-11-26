@@ -153,10 +153,10 @@ int main(void)
     gc = XCreateGC(display, window, 0, NULL);
     XSetForeground(display, gc, WhitePixel(display, screen));
     font = XLoadQueryFont(display, "5x7");
-    if (!font)
-        font = XQueryFont(display, XGContextFromGC(gc));
     if (font)
         XSetFont(display, gc, font->fid);
+    else
+        font = XQueryFont(display, XGContextFromGC(gc));
     XFlush(display);
     struct pollfd connection = {.fd = ConnectionNumber(display), .events = POLLIN};
     for (;;) {
