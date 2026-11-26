@@ -1,6 +1,7 @@
 """Small, on-demand X11 Start panel, task picker and network panel."""
 import calendar as dates
 from datetime import date
+from pathlib import Path
 import os
 import queue
 import threading
@@ -8,7 +9,7 @@ import re
 import subprocess
 import sys
 import tkinter as tk
-from tkinter import ttk
+from tkinter import messagebox, simpledialog, ttk
 
 import appearance
 
@@ -468,6 +469,27 @@ def system_info():
     root.mainloop()
 
 
+
+def new_folder():
+    root = panel("RelifeNewFolder", "Yeni qovluq")
+    name = simpledialog.askstring("Yeni qovluq", "Qovluğun adı", parent=root)
+    if name and name.strip():
+        name = name.strip()
+        if name in (".", "..") or "/" in name:
+            messagebox.showerror("Yeni qovluq", "Düzgün qovluq adı daxil et.", parent=root)
+        else:
+            try:
+                (Path.home() / "Desktop" / name).mkdir()
+            except OSError:
+                messagebox.showerror("Yeni qovluq", "Qovluğu yaratmaq mümkün olmadı.", parent=root)
+    root.destroy()
+
+
+def refresh_desktop():
+    command("pcmanfm", "--profile", "ReLife", "--desktop-off")
+    launch("pcmanfm", "--profile", "ReLife", "--desktop")
+
+
 def main():
     action = sys.argv[1] if len(sys.argv) > 1 else "start"
     if action == "start":
@@ -480,6 +502,10 @@ def main():
         calendar()
     elif action == "system":
         system_info()
+    elif action == "new-folder":
+        new_folder()
+    elif action == "refresh-desktop":
+        refresh_desktop()
 
 
 if __name__ == "__main__":

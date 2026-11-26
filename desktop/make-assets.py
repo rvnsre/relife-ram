@@ -92,6 +92,18 @@ def main():
                         f' stroke-linejoin="round">{shape}</g></svg>')
         render(icon, icon.with_suffix(".png"), 32, 32)
 
+    theme = dest / "icons/ReLife"
+    (theme / "scalable/places").mkdir(parents=True, exist_ok=True)
+    (theme / "index.theme").write_text(
+        "[Icon Theme]\nName=ReLife\nInherits=Adwaita,hicolor\nDirectories=scalable/places\n"
+        "[scalable/places]\nSize=48\nMinSize=16\nMaxSize=256\nType=Scalable\nContext=Places\n"
+    )
+    (theme / "scalable/places/folder.svg").write_text((dest / "icons/relife/files.svg").read_text())
+    for name in ("folder-open", "folder-documents", "folder-download", "folder-desktop", "user-home"):
+        alias = theme / f"scalable/places/{name}.svg"
+        alias.unlink(missing_ok=True)
+        alias.symlink_to("folder.svg")
+
 
 if __name__ == "__main__":
     main()

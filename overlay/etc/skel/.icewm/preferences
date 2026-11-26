@@ -39,3 +39,5 @@ ShowFocusModeMenu=0
 ShowQuickSwitch=0
 TrayIconMaxWidth=128
 TrayIconMaxHeight=34
+UseRootButtons=4
+DesktopMenuButton=3

@@ -36,8 +36,10 @@ def main():
               wraplength=370).pack(anchor="w", pady=(0, 12))
     row = ttk.Frame(pane)
     row.pack(anchor="w")
+    icon = tk.PhotoImage(file="/usr/share/icons/relife/power.png")
     buttons = [
-        ttk.Button(row, text="Söndür", style="Primary.TButton", command=lambda: select("poweroff", "sönür")),
+        ttk.Button(row, text="Söndür", image=icon, compound="left", style="Primary.TButton",
+                   command=lambda: select("poweroff", "sönür")),
         ttk.Button(row, text="Yenidən başlat", command=lambda: select("reboot", "yenidən başlayır")),
         ttk.Button(row, text="Ləğv et", command=root.destroy),
     ]
