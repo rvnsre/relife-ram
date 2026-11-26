@@ -16,6 +16,7 @@ enum { WIDTH = 128, HEIGHT = 34 };
 static Display *display;
 static Window window, root;
 static GC gc;
+static XFontStruct *font;
 
 static void run(const char *program, const char *argument)
 {
@@ -47,6 +48,29 @@ static int network_up(void)
     return up;
 }
 
+static int battery_level(void)
+{
+    glob_t paths;
+    int level = -1;
+    if (glob("/sys/class/power_supply/BAT*/capacity", 0, NULL, &paths) == 0 && paths.gl_pathc) {
+        FILE *file = fopen(paths.gl_pathv[0], "r");
+        if (file) {
+            if (fscanf(file, "%d", &level) != 1)
+                level = -1;
+            fclose(file);
+        }
+    }
+    globfree(&paths);
+    return level >= 0 && level <= 100 ? level : -1;
+}
+
+static void clock_line(const char *text, int y)
+{
+    int length = (int)strlen(text);
+    int width = font ? XTextWidth(font, text, length) : length * 6;
+    XDrawString(display, window, gc, 93 - width / 2, y, text, length);
+}
+
 static void paint(void)
 {
     XWindowAttributes bounds;
@@ -75,9 +99,13 @@ static void paint(void)
     XDrawString(display, window, gc, 42, center+4, language, 2);
     XDrawRectangle(display, window, gc, 57, center-5, 10, 10);
     XFillRectangle(display, window, gc, 68, center-2, 2, 5);
-    XDrawLine(display, window, gc, 59, center, 65, center);
-    XDrawString(display, window, gc, 87, center-3, clock, (int)strlen(clock));
-    XDrawString(display, window, gc, 72, center+10, day, (int)strlen(day));
+    int charge = battery_level();
+    if (charge >= 0)
+        XFillRectangle(display, window, gc, 59, center-3, (unsigned int)(charge * 8 / 100), 7);
+    else
+        XDrawLine(display, window, gc, 60, center, 64, center);
+    clock_line(clock, center-3);
+    clock_line(day, center+10);
     XDrawLine(display, window, gc, WIDTH-7, 0, WIDTH-7, bounds.height);
     XFlush(display);
 }
@@ -124,7 +152,9 @@ int main(void)
     XSendEvent(display, owner, False, NoEventMask, &request);
     gc = XCreateGC(display, window, 0, NULL);
     XSetForeground(display, gc, WhitePixel(display, screen));
-    XFontStruct *font = XLoadQueryFont(display, "5x7");
+    font = XLoadQueryFont(display, "5x7");
+    if (!font)
+        font = XQueryFont(display, XGContextFromGC(gc));
     if (font)
         XSetFont(display, gc, font->fid);
     XFlush(display);

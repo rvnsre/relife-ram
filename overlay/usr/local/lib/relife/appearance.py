@@ -58,7 +58,7 @@ def configure(root):
         root._relife_style_images = getattr(root, "_relife_style_images", []) + images
         style.element_create(element, "image", images[0], ("disabled", images[4]),
                              ("pressed", images[2]), ("focus", images[3]), ("active", images[1]),
-                             border=8, sticky="nsew")
+                             border=3, sticky="nsew")
         style.layout(variant, [(element, {"sticky": "nsew", "children":
                      [("Button.padding", {"sticky": "nsew", "children":
                       [("Button.label", {"sticky": "nsew"})]})]})])
@@ -78,7 +78,7 @@ def configure(root):
     entry_focus = rounded_image(root, "#ffffff", ACCENT)
     root._relife_style_images.extend((entry_normal, entry_focus))
     style.element_create("RelifeEntry", "image", entry_normal, ("focus", entry_focus),
-                         border=8, sticky="nsew")
+                         border=3, sticky="nsew")
     style.layout("TEntry", [("RelifeEntry", {"sticky": "nsew", "children":
                  [("Entry.padding", {"sticky": "nsew", "children":
                   [("Entry.textarea", {"sticky": "nsew"})]})]})])
