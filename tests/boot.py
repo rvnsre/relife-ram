@@ -158,8 +158,8 @@ if [ -n "$start_window" ]; then
   sleep 4
   echo RELIFE_START_END
   sleep 2
-  # "b" matches Şəbəkə with a keyboard layout independent ASCII keystroke.
-  as_student xdotool type b
+  # The search accepts the standard ASCII spelling as well as Azerbaijani.
+  as_student xdotool type sebeke
   as_student xdotool key Return
   for n in $(seq 1 10); do
     network_window=$(as_student xdotool search --onlyvisible --class '^RelifeNetwork$' | head -1)

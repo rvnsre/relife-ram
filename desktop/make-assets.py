@@ -91,6 +91,7 @@ def main():
                         f'<g fill="none" stroke="{shade}" stroke-width="1.7" stroke-linecap="round"'
                         f' stroke-linejoin="round">{shape}</g></svg>')
         render(icon, icon.with_suffix(".png"), 32, 32)
+        render(icon, icon.with_name(f"{name}-24.png"), 24, 24)
 
     theme = dest / "icons/ReLife"
     (theme / "scalable/places").mkdir(parents=True, exist_ok=True)

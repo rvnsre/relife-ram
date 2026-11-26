@@ -10,6 +10,7 @@ import subprocess
 import sys
 import tkinter as tk
 from tkinter import messagebox, simpledialog, ttk
+import unicodedata
 
 import appearance
 
@@ -93,8 +94,9 @@ def dark_label(parent, text=None, *, variable=None, bg=DARK, fg=WHITE, size=10, 
                     font=(appearance.FONT, size, "bold" if bold else "normal"), **kwargs)
 
 
-def dark_button(parent, label, callback, *, bg=CARD, icon=None, **kwargs):
-    image = tk.PhotoImage(master=parent, file=f"{ICONS}{icon}.png") if icon else None
+def dark_button(parent, label, callback, *, bg=CARD, icon=None, icon_size=32, **kwargs):
+    suffix = "-24" if icon_size == 24 else ""
+    image = tk.PhotoImage(master=parent, file=f"{ICONS}{icon}{suffix}.png") if icon else None
     button = tk.Button(parent, text=label, image=image, compound="left", command=callback,
                        bg=bg, fg=WHITE, activebackground="#2d2d2d", activeforeground=WHITE,
                        bd=0, relief="flat", highlightthickness=1, highlightbackground=bg,
@@ -104,6 +106,12 @@ def dark_button(parent, label, callback, *, bg=CARD, icon=None, **kwargs):
     button.bind("<Leave>", lambda event: button.configure(bg=bg, highlightbackground=bg))
     button.bind("<Return>", lambda event: button.invoke())
     return button
+
+
+def search_key(value):
+    normalized = unicodedata.normalize("NFKD", value.strip().casefold())
+    return "".join(char for char in normalized if not unicodedata.combining(char)).translate(
+        str.maketrans({"ə": "e", "ı": "i"}))
 
 
 def start():
@@ -156,7 +164,7 @@ def start():
     listing = tk.Frame(list_side, bg=DARK)
     listing.pack(fill="both", expand=True, pady=(8, 0))
     buttons = [
-        dark_button(listing, name, lambda args=args: open_app(*args), bg=DARK, icon=icon, anchor="w")
+        dark_button(listing, name, lambda args=args: open_app(*args), bg=DARK, icon=icon, icon_size=24, anchor="w")
         for name, icon, args in APPS
     ]
     empty = dark_label(listing, "Uyğun tətbiq tapılmadı.", fg=SOFT)
@@ -170,7 +178,7 @@ def start():
         return "break"
 
     def filter_apps(*_):
-        value = query.get().strip().replace("İ", "i").casefold()
+        value = search_key(query.get())
         hint.place_forget()
         if not query.get():
             hint.place(x=5, rely=.5, anchor="w")
@@ -178,7 +186,7 @@ def start():
         visible.clear()
         for (name, _, _), button in zip(APPS, buttons):
             button.pack_forget()
-            if value in name.replace("İ", "i").casefold():
+            if value in search_key(name):
                 button.pack(fill="x")
                 visible.append(button)
         if not visible:
@@ -330,13 +338,14 @@ def network():
     body.pack(fill="both", expand=True)
     dark_label(body, "Şəbəkə", bg="#1f1f1f", size=17, bold=True).pack(fill="x")
     connected = tk.StringVar(value="Şəbəkə yoxlanılır…")
-    dark_label(body, variable=connected, bg=CARD, padx=10, pady=8, wraplength=310).pack(fill="x", pady=8)
+    dark_label(body, variable=connected, bg=CARD, padx=10, pady=8, height=3,
+               wraplength=310).pack(fill="x", pady=8)
     entries = tk.Listbox(body, height=6, width=32, bg=CARD, fg=WHITE,
                          borderwidth=0, highlightthickness=1, highlightbackground=EDGE,
                          selectbackground="#005a9e", exportselection=False)
     entries.pack(fill="x", pady=(0, 8))
     status = tk.StringVar()
-    dark_label(body, variable=status, bg="#1f1f1f", fg=SOFT, wraplength=310).pack(fill="x")
+    dark_label(body, variable=status, bg="#1f1f1f", fg=SOFT, height=2, wraplength=310).pack(fill="x")
     rows = []
     wifi_devices = []
     results = queue.Queue()
