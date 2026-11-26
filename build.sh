@@ -58,6 +58,7 @@ x11-utils
 python3
 python3-tk
 curl
+librsvg2-common
 xz-utils
 sudo
 PKG

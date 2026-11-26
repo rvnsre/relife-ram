@@ -77,6 +77,37 @@ else
   ip route
 fi
 as_student() { runuser -u student -- env HOME=/home/student DISPLAY=:0 XAUTHORITY=/home/student/.Xauthority "$@"; }
+# Exercise Start search from the taskbar, then use its power action.
+height=$(as_student xdotool getdisplaygeometry | awk '{print $2}')
+open_start() {
+  as_student xdotool mousemove 15 "$((height - 17))" click 1
+  for n in $(seq 1 10); do
+    start_window=$(as_student xdotool search --onlyvisible --class '^RelifeStart$' | head -1)
+    [ -z "$start_window" ] || break
+    sleep 1
+  done
+}
+open_start
+if [ -n "$start_window" ]; then
+  as_student timeout 6 xdotool windowactivate --sync "$start_window"
+  sleep 4
+  echo RELIFE_START_END
+  sleep 2
+  # The search accepts the standard ASCII spelling as well as Azerbaijani.
+  as_student xdotool type sebeke
+  as_student xdotool key Return
+  for n in $(seq 1 10); do
+    network_window=$(as_student xdotool search --onlyvisible --class '^RelifeNetwork$' | head -1)
+    [ -z "$network_window" ] || break
+    sleep 1
+  done
+  if [ -n "$network_window" ]; then
+    sleep 3
+    echo RELIFE_START_SEARCH_OK
+    sleep 3
+    as_student timeout 6 xdotool windowactivate --sync "$network_window" key Escape
+  fi
+fi
 as_student pcmanfm --profile ReLife /home/student/Desktop/education.desktop >/tmp/relife-education.log 2>&1 &
 for n in $(seq 1 20); do
   window=$(as_student xdotool search --onlyvisible --name '^ReLife.*T' | head -1)
@@ -96,7 +127,7 @@ if [ -n "$files_window" ] && [ -n "$window" ]; then
   desktop_width=$(as_student xdotool getdisplaygeometry | awk '{print $1}')
   as_student xdotool windowsize "$window" "$((desktop_width * 56 / 100))" 620 windowmove "$window" 8 50
   as_student xdotool windowsize "$files_window" "$((desktop_width * 42 / 100))" 470 windowmove "$files_window" "$((desktop_width * 57 / 100))" 135
-  as_student xdotool windowactivate --sync "$files_window"
+  as_student timeout 6 xdotool windowactivate --sync "$files_window"
   sleep 2
   echo RELIFE_FILES_END
   sleep 3
@@ -111,7 +142,7 @@ done
 if [ -n "$switch_window" ]; then
   echo RELIFE_SWITCHER_END
   sleep 4
-  as_student xdotool windowactivate --sync "$switch_window"
+  as_student timeout 6 xdotool windowactivate --sync "$switch_window"
   as_student xdotool key Return
   sleep 2
   selected=$(as_student xdotool getactivewindow)
@@ -138,45 +169,13 @@ awk '/MemTotal:/{t=$2} /MemFree:/{f=$2} /MemAvailable:/{a=$2} END {printf "BROWS
 echo RELIFE_BROWSER_END
 sleep 5
 if [ -n "$browser_window" ]; then
-  as_student xdotool windowactivate --sync "$browser_window"
+  as_student timeout 6 xdotool windowactivate --sync "$browser_window"
   as_student xdotool key alt+F4
 fi
 fi
-# Exercise Start search from the taskbar, then use its power action.
-height=$(as_student xdotool getdisplaygeometry | awk '{print $2}')
-open_start() {
-  as_student xdotool mousemove 15 "$((height - 17))" click 1
-  for n in $(seq 1 10); do
-    start_window=$(as_student xdotool search --onlyvisible --class '^RelifeStart$' | head -1)
-    [ -z "$start_window" ] || break
-    sleep 1
-  done
-}
 open_start
 if [ -n "$start_window" ]; then
-  as_student xdotool windowactivate --sync "$start_window"
-  sleep 4
-  echo RELIFE_START_END
-  sleep 2
-  # The search accepts the standard ASCII spelling as well as Azerbaijani.
-  as_student xdotool type sebeke
-  as_student xdotool key Return
-  for n in $(seq 1 10); do
-    network_window=$(as_student xdotool search --onlyvisible --class '^RelifeNetwork$' | head -1)
-    [ -z "$network_window" ] || break
-    sleep 1
-  done
-  if [ -n "$network_window" ]; then
-    sleep 3
-    echo RELIFE_START_SEARCH_OK
-    sleep 3
-    as_student xdotool windowactivate --sync "$network_window" key Escape
-  fi
-  start_window=$(as_student xdotool search --onlyvisible --class '^RelifeStart$' | head -1)
-  [ -n "$start_window" ] || open_start
-fi
-if [ -n "$start_window" ]; then
-  as_student xdotool windowactivate --sync "$start_window" key alt+p
+  as_student timeout 6 xdotool windowactivate --sync "$start_window" key alt+p
 fi
 for n in $(seq 1 15); do
   power_window=$(as_student xdotool search --onlyvisible --class '^RelifePower$' | head -1)
@@ -184,7 +183,7 @@ for n in $(seq 1 15); do
   sleep 1
 done
 if [ -n "$power_window" ]; then
-  as_student xdotool windowactivate --sync "$power_window"
+  as_student timeout 6 xdotool windowactivate --sync "$power_window"
   echo RELIFE_SHUTDOWN_REQUEST
   as_student xdotool key space
 else
