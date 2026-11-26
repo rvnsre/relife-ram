@@ -1,12 +1,12 @@
-prog "Dərs oxu" /usr/share/icons/relife/education.xpm relife-education
-prog "İnternetə gir" /usr/share/icons/relife/internet.xpm relife-firefox
-prog "Fayllarımı aç" /usr/share/icons/relife/files.xpm pcmanfm
-prog "Mətn yaz" /usr/share/icons/relife/write.xpm mousepad
+prog "Dərs oxu" /usr/share/icons/relife/education.svg relife-education
+prog "İnternetə gir" /usr/share/icons/relife/internet.svg relife-firefox
+prog "Fayllarımı aç" /usr/share/icons/relife/files.svg pcmanfm
+prog "Mətn yaz" /usr/share/icons/relife/write.svg mousepad
 separator
-menu "Parametrlər" /usr/share/icons/relife/network.xpm {
-    prog "Wi-Fi şəbəkəsinə qoşul" /usr/share/icons/relife/network.xpm relife-desktop network
-    prog "Səsi dəyiş" /usr/share/icons/relife/sound.xpm relife-sound
+menu "Parametrlər" /usr/share/icons/relife/network.svg {
+    prog "Wi-Fi şəbəkəsinə qoşul" /usr/share/icons/relife/network.svg relife-desktop network
+    prog "Səsi dəyiş" /usr/share/icons/relife/sound.svg relife-sound
 }
-prog "Kömək" /usr/share/icons/relife/help.xpm relife-help
+prog "Kömək" /usr/share/icons/relife/help.svg relife-help
 separator
-prog "Kompüteri söndür" /usr/share/icons/relife/power.xpm relife-power-menu
+prog "Kompüteri söndür" /usr/share/icons/relife/power.svg relife-power-menu

@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080">
+ <defs>
+  <radialGradient id="sky" cx="77%" cy="48%" r="71%"><stop stop-color="#224e87"/><stop offset=".46" stop-color="#101d43"/><stop offset="1" stop-color="#090f24"/></radialGradient>
+  <linearGradient id="light"><stop stop-color="#224770" stop-opacity="0"/><stop offset=".74" stop-color="#285bdd" stop-opacity=".28"/><stop offset="1" stop-color="#51d8ff" stop-opacity=".84"/></linearGradient>
+  <linearGradient id="glass" x1="0%" y1="100%" x2="100%" y2="0%"><stop stop-color="#0b264e"/><stop offset=".63" stop-color="#1e5176"/><stop offset="1" stop-color="#88dbf3"/></linearGradient>
+  <linearGradient id="violet"><stop stop-color="#463d91" stop-opacity="0"/><stop offset=".74" stop-color="#4945b6" stop-opacity=".22"/><stop offset="1" stop-color="#a998fe" stop-opacity=".64"/></linearGradient>
+ </defs>
+ <path fill="url(#sky)" d="M0 0h1920v1080H0z"/>
+ <path fill="url(#light)" d="m0 410 1278 41 139-148L0 70z"/>
+ <path fill="url(#violet)" d="m0 995 1463-360-116 96L0 1080z"/>
+ <path fill="url(#light)" d="m46 794 1190-236 99-80L46 659z" opacity=".43"/>
+ <path fill="url(#violet)" d="m1920 117-405 245 45 55 360-50z"/>
+ <path fill="url(#glass)" stroke="#89e2ff" stroke-width="2" d="m1444 277 155 141-71 67-84-76-168 159-74-66z"/>
+ <path fill="url(#glass)" stroke="#78a8eb" stroke-width="1.5" d="m1444 468 155 142-245 229-148-138 71-68 77 71 169-155z" opacity=".8"/>
+ <path fill="none" stroke="#9cecff" stroke-width="2" opacity=".3" d="m1131 504 314-291 223 204-67 66m64 123-311 291-210-197"/>
+</svg>

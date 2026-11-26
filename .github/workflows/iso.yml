@@ -20,7 +20,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install build and test tools
-        run: apt-get update && apt-get install -y live-build debootstrap xorriso squashfs-tools isolinux syslinux-common grub-pc-bin grub-efi-amd64-bin grub-common fdisk dosfstools mtools ca-certificates curl qemu-system-x86 ovmf python3 python3-pil cmake g++ pkg-config libudev-dev libinput-dev libpugixml-dev libcairo2-dev libx11-dev libxtst-dev libxrandr-dev libxi-dev libglib2.0-dev
+        run: apt-get update && apt-get install -y live-build debootstrap xorriso squashfs-tools isolinux syslinux-common grub-pc-bin grub-efi-amd64-bin grub-common fdisk dosfstools mtools ca-certificates curl qemu-system-x86 ovmf librsvg2-bin python3 python3-pil cmake g++ pkg-config libudev-dev libinput-dev libpugixml-dev libcairo2-dev libx11-dev libxtst-dev libxrandr-dev libxi-dev libglib2.0-dev
       - name: Validate learning tools and build scripts
         env:
           PYTHONDONTWRITEBYTECODE: 1

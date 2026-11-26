@@ -47,7 +47,7 @@ do not connect the provider to MCP.
 On disposable Debian 13, install `live-build debootstrap xorriso squashfs-tools
 isolinux syslinux-common grub-pc-bin grub-efi-amd64-bin grub-common dosfstools
 mtools curl ca-certificates python3 cmake g++ pkg-config libudev-dev libinput-dev
-libpugixml-dev libcairo2-dev libx11-dev libxtst-dev libxrandr-dev libxi-dev libglib2.0-dev`. Run `sudo bash build.sh extreme-lite` or
+libpugixml-dev libcairo2-dev libx11-dev libxtst-dev libxrandr-dev libxi-dev libglib2.0-dev librsvg2-bin`. Run `sudo bash build.sh extreme-lite` or
 `sudo bash build.sh education`. The corresponding ISO and SHA-256 digest are
 written to `dist/<edition>/`. Both images use an XZ boot archive and 1 MiB
 SquashFS blocks with the x86 compression filter.

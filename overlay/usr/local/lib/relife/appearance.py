@@ -4,17 +4,17 @@ import tkinter as tk
 import tkinter.font as font
 from tkinter import ttk
 
-BACKGROUND = "#f1f0f9"
-SURFACE = "#fcfbff"
-INK = "#211e36"
-MUTED = "#5f5b75"
-ACCENT = "#5240b6"
-BORDER = "#ded9ed"
-TINT = "#ebe6ff"
+BACKGROUND = "#f3f3f3"
+SURFACE = "#ffffff"
+INK = "#1a1a1a"
+MUTED = "#5c5c5c"
+ACCENT = "#0078d4"
+BORDER = "#e5e5e5"
+TINT = "#e6f3fc"
 FONT = "DejaVu Sans"
 
 
-def rounded_image(root, fill, edge, radius=7):
+def rounded_image(root, fill, edge, radius=2):
     size = 2 * radius + 3
     image = tk.PhotoImage(master=root, width=size, height=size)
     for y in range(size):
@@ -41,16 +41,16 @@ def configure(root):
     style.configure("Shell.TFrame", background=BACKGROUND)
     style.configure("TNotebook", background=BACKGROUND, tabmargins=(0, 0, 0, 0), borderwidth=1)
     style.configure("TNotebook.Tab", background=BACKGROUND, padding=(9, 9))
-    style.map("TNotebook.Tab", background=[("selected", TINT), ("active", "#f7f3ff")],
-              foreground=[("selected", "#3e2a9e")])
+    style.map("TNotebook.Tab", background=[("selected", TINT), ("active", "#edf7fd")],
+              foreground=[("selected", "#005a9e")])
     for prefix, padding, normal, active, pressed in (
-        ("", (14, 8), SURFACE, TINT, "#ded6ff"),
-        ("Primary.", (16, 8), ACCENT, "#4834a7", "#382881"),
-        ("Tile.", (12, 6), "#ffffff", "#f4efff", "#e5ddff"),
+        ("", (14, 8), SURFACE, TINT, "#c6e6fa"),
+        ("Primary.", (16, 8), ACCENT, "#1a86d9", "#005a9e"),
+        ("Tile.", (12, 6), "#ffffff", "#edf7fd", "#c6e6fa"),
     ):
         variant = f"{prefix}TButton"
         element = f"{prefix}RelifeSurface"
-        colors = [(normal, BORDER), (active, "#b3a6e7"), (pressed, ACCENT),
+        colors = [(normal, BORDER), (active, "#1a86d9"), (pressed, ACCENT),
                   (normal, ACCENT), ("#efedf4", BORDER)]
         if prefix == "Primary.":
             colors = [(color, color) for color, _ in colors[:3]] + [(normal, INK), colors[-1]]

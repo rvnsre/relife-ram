@@ -1,12 +1,14 @@
 /* Shared ReLife colors for native GTK applications. */
-@define-color theme_selected_bg_color #5240b6;
+@define-color theme_selected_bg_color #0078d4;
 @define-color theme_selected_fg_color #ffffff;
 
-window.background, .sidebar { background-color: #faf8fd; color: #211e36; }
-toolbar { background: #f1edf9; padding: 5px 7px; border-bottom: 1px solid #ded9ed; }
-entry, button { border-radius: 8px; }
-button:focus, entry:focus { outline-color: #5240b6; }
+window.background, .sidebar { background-color: #ffffff; color: #1a1a1a; }
+toolbar { background: #f3f3f3; padding: 5px 7px; border-bottom: 1px solid #e5e5e5; }
+entry, button { border-radius: 2px; }
+button:focus, entry:focus { outline-color: #0078d4; }
 .sidebar row:selected, iconview:selected, treeview.view:selected {
-    background-color: #5240b6;
+    background-color: #0078d4;
     color: #ffffff;
 }
+scrollbar slider { min-width: 7px; min-height: 7px; border: 0; border-radius: 2px; background: #888888; }
+scrollbar trough { background: #f3f3f3; }

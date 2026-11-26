@@ -1,5 +1,6 @@
 [Desktop Entry]
-Type=Link
+Type=Application
 Name=Mətn yaz
-Icon=/usr/share/icons/relife/write.xpm
-URL=/usr/share/applications/relife-write.desktop
+Exec=mousepad
+Icon=/usr/share/icons/relife/write.svg
+Terminal=false

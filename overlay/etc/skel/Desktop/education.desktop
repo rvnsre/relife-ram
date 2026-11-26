@@ -1,6 +1,8 @@
 [Desktop Entry]
-Type=Link
+Type=Application
 Name=Dərs oxu
 Name[en]=Education Center
-Icon=/usr/share/icons/relife/education.xpm
-URL=/usr/share/applications/relife-education.desktop
+Exec=relife-education
+Icon=/usr/share/icons/relife/education.svg
+Categories=Education;
+Terminal=false

@@ -1,3 +1,9 @@
 relifeStart.Relifestart.dTitleBar: 0
 relifeStart.Relifestart.dBorder: 0
 relifeStart.Relifestart.ignoreTaskBar: 1
+relifeNetwork.Relifenetwork.dTitleBar: 0
+relifeNetwork.Relifenetwork.dBorder: 0
+relifeNetwork.Relifenetwork.ignoreTaskBar: 1
+relifeCalendar.Relifecalendar.dTitleBar: 0
+relifeCalendar.Relifecalendar.dBorder: 0
+relifeCalendar.Relifecalendar.ignoreTaskBar: 1

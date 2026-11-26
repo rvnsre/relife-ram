@@ -1,5 +1,9 @@
 """Small, on-demand X11 Start panel, task picker and network panel."""
+import calendar as dates
+from datetime import date
 import os
+import queue
+import threading
 import re
 import subprocess
 import sys
@@ -54,97 +58,156 @@ def place(root, x=None, bottom=False):
     width, height = root.winfo_reqwidth(), root.winfo_reqheight()
     if x is None:
         x = (root.winfo_screenwidth() - width) // 2
-    y = root.winfo_screenheight() - height - 47 if bottom else (root.winfo_screenheight() - height) // 2
+    screen_height = root.winfo_screenheight()
+    bar = command("xprop", "-root", "_NET_WORKAREA").stdout.partition("=")[2]
+    bounds = re.findall(r"\d+", bar)
+    bottom_edge = int(bounds[1]) + int(bounds[3]) if len(bounds) >= 4 else screen_height - 38
+    y = bottom_edge - height if bottom else (screen_height - height) // 2
     root.geometry(f"+{max(x, 0)}+{max(y, 0)}")
     root.deiconify()
+
+
+DARK = "#191919"
+RAIL = "#141414"
+CARD = "#222222"
+EDGE = "#333333"
+WHITE = "#f8f8f8"
+SOFT = "#c9c9c9"
+BLUE = "#0078d4"
+ICONS = "/usr/share/icons/relife/"
+APPS = (
+    ("Açıq pəncərələr", "windows", ("relife-desktop", "switch")),
+    ("Fayllarım", "files", ("pcmanfm",)),
+    ("İnternet", "internet", ("relife-firefox",)),
+    ("Kömək və bələdçi", "help", ("relife-help",)),
+    ("Mətn yaz", "write", ("mousepad",)),
+    ("Səs", "sound", ("relife-sound",)),
+    ("Şəbəkə", "network", ("relife-desktop", "network")),
+    ("Təhsil mərkəzi", "education", ("relife-education",)),
+)
+
+
+def dark_label(parent, text=None, *, variable=None, bg=DARK, fg=WHITE, size=10, bold=False, **kwargs):
+    return tk.Label(parent, text=text, textvariable=variable, bg=bg, fg=fg, anchor="w",
+                    font=(appearance.FONT, size, "bold" if bold else "normal"), **kwargs)
+
+
+def dark_button(parent, label, callback, *, bg=CARD, icon=None, **kwargs):
+    image = tk.PhotoImage(master=parent, file=f"{ICONS}{icon}.png") if icon else None
+    button = tk.Button(parent, text=label, image=image, compound="left", command=callback,
+                       bg=bg, fg=WHITE, activebackground="#2d2d2d", activeforeground=WHITE,
+                       bd=0, relief="flat", highlightthickness=1, highlightbackground=bg,
+                       highlightcolor="#1a86d9", font=(appearance.FONT, 10), cursor="hand2", **kwargs)
+    button.relife_image = image
+    button.bind("<Enter>", lambda event: button.configure(bg="#2d2d2d", highlightbackground="#606060"))
+    button.bind("<Leave>", lambda event: button.configure(bg=bg, highlightbackground=bg))
+    button.bind("<Return>", lambda event: button.invoke())
+    return button
 
 
 def start():
     root = panel("RelifeStart", "Başla")
     root.wm_attributes("-type", "dialog")
     root.attributes("-topmost", True)
-    root.configure(highlightbackground=appearance.BORDER, highlightthickness=1)
-    shell = ttk.Frame(root, padding=(22, 18, 22, 14), style="Shell.TFrame")
+    root.configure(bg=DARK, highlightbackground=EDGE, highlightthickness=1)
+    shell = tk.Frame(root, bg=DARK)
     shell.pack(fill="both", expand=True)
-    style = ttk.Style(root)
-    style.configure("Tile.TButton", anchor="w")
-
-    ttk.Label(shell, text="ReLife", style="Accent.TLabel").pack(anchor="w")
-    ttk.Label(shell, text="Başla", style="Hero.TLabel").pack(anchor="w", pady=(0, 10))
-    query = tk.StringVar()
-    search = ttk.Entry(shell, textvariable=query)
-    search.pack(fill="x", pady=(0, 12))
-    hint = ttk.Label(shell, text="Tətbiq axtar", style="Muted.TLabel", cursor="xterm")
-    hint.place(in_=search, x=12, rely=.5, anchor="w")
-    hint.bind("<Button-1>", lambda event: search.focus_set())
-
-    tiles = ttk.Frame(shell, style="Shell.TFrame", width=min(480, max(300, root.winfo_screenwidth() - 58)),
-                      height=208)
-    tiles.pack(fill="x")
-    tiles.grid_propagate(False)
-    for col in range(2):
-        tiles.columnconfigure(col, weight=1, uniform="apps")
+    rail = tk.Frame(shell, bg=RAIL)
+    rail.pack(side="left", fill="y")
+    list_side = tk.Frame(shell, bg=DARK, padx=14, pady=13)
+    list_side.pack(side="left", fill="both", expand=True)
+    tiles = tk.Frame(shell, bg="#202020", padx=12, pady=13)
+    tiles.pack(side="left", fill="both")
+    dark_label(list_side, "Başla", size=18, bold=True).pack(fill="x", pady=(0, 9))
 
     def open_app(*args):
         root.destroy()
         launch(*args)
 
-    apps = (
-        ("Təhsil mərkəzi", "education", ("relife-education",)),
-        ("İnternet", "internet", ("relife-firefox",)),
+    expanded = False
+    rail_actions = []
+
+    def expand():
+        nonlocal expanded
+        expanded = not expanded
+        for button, label in rail_actions:
+            button.configure(text=label if expanded else "")
+
+    dark_button(rail, "", expand, bg=RAIL, icon="start", padx=6).pack(fill="x", pady=(6, 0))
+    for name, icon, args in (
+        ("Güc", "power", ("relife-power-menu",)),
+        ("Sistem məlumatı", "system", ("relife-desktop", "system")),
         ("Fayllarım", "files", ("pcmanfm",)),
-        ("Mətn yaz", "write", ("mousepad",)),
-        ("Şəbəkə", "network", ("relife-desktop", "network")),
-        ("Açıq pəncərələr", "windows", ("relife-desktop", "switch")),
-    )
-    images = [tk.PhotoImage(file=f"/usr/share/icons/relife/{icon}.png") for _, icon, _ in apps]
-    buttons = [ttk.Button(tiles, text=name, image=image, compound="left", style="Tile.TButton",
-                          command=lambda argv=argv: open_app(*argv))
-               for (name, _, argv), image in zip(apps, images)]
-    empty = ttk.Label(tiles, text="Uyğun tətbiq tapılmadı.", style="Caption.TLabel")
-    matching = []
+        ("Kömək", "help", ("relife-help",)),
+    ):
+        button = dark_button(rail, "", lambda args=args: open_app(*args), bg=RAIL, icon=icon, padx=6)
+        button.pack(side="bottom", fill="x", pady=2)
+        rail_actions.append((button, name))
+
+    query = tk.StringVar()
+    search = tk.Entry(list_side, textvariable=query, bg="#252525", fg=WHITE, insertbackground=WHITE,
+                      selectbackground=BLUE, bd=6, relief="flat", highlightthickness=1,
+                      highlightbackground=EDGE, highlightcolor="#1a86d9", width=24)
+    search.pack(fill="x")
+    hint = dark_label(search, "Tətbiq axtar…", bg="#252525", fg=SOFT, cursor="xterm")
+    hint.place(x=5, rely=.5, anchor="w")
+    hint.bind("<Button-1>", lambda event: search.focus_set())
+    listing = tk.Frame(list_side, bg=DARK)
+    listing.pack(fill="both", expand=True, pady=(8, 0))
+    buttons = [
+        dark_button(listing, name, lambda args=args: open_app(*args), bg=DARK, icon=icon, anchor="w")
+        for name, icon, args in APPS
+    ]
+    empty = dark_label(listing, "Uyğun tətbiq tapılmadı.", fg=SOFT)
+    visible = []
+
+    def focus(offset):
+        if visible:
+            current = root.focus_get()
+            index = visible.index(current) if current in visible else (-1 if offset > 0 else 0)
+            visible[(index + offset) % len(visible)].focus_set()
+        return "break"
 
     def filter_apps(*_):
-        search_text = query.get().strip().replace("İ", "i").casefold()
+        value = query.get().strip().replace("İ", "i").casefold()
         hint.place_forget()
         if not query.get():
-            hint.place(in_=search, x=12, rely=.5, anchor="w")
-        empty.grid_remove()
-        matching.clear()
-        for (name, _, _), button in zip(apps, buttons):
-            button.grid_remove()
-            if search_text in name.replace("İ", "i").casefold():
-                row, col = divmod(len(matching), 2)
-                button.grid(row=row, column=col, sticky="ew", padx=(0, 6) if col == 0 else (6, 0),
-                            pady=(0, 7))
-                matching.append(button)
-        if not matching:
-            empty.grid(row=0, column=0, columnspan=2, pady=30)
+            hint.place(x=5, rely=.5, anchor="w")
+        empty.pack_forget()
+        visible.clear()
+        for (name, _, _), button in zip(APPS, buttons):
+            button.pack_forget()
+            if value in name.replace("İ", "i").casefold():
+                button.pack(fill="x")
+                visible.append(button)
+        if not visible:
+            empty.pack(anchor="w", pady=8)
 
-    def choose_first(event):
-        if matching:
-            matching[0].invoke()
+    def activate_first(event):
+        if visible:
+            visible[0].invoke()
         return "break"
 
     query.trace_add("write", filter_apps)
-    search.bind("<Return>", choose_first)
-    search.bind("<Down>", lambda event: matching[0].focus_set() if matching else None)
+    root.bind("<Up>", lambda event: focus(-1))
+    root.bind("<Down>", lambda event: focus(1))
+    search.bind("<Return>", activate_first)
+    root.bind("<Alt-p>", lambda event: open_app("relife-power-menu"))
+    dark_label(tiles, "ReLife Mərkəzi", bg="#202020", fg=SOFT, bold=True).grid(
+        row=0, columnspan=2, sticky="ew", pady=(4, 12))
+    tile_apps = (7, 2, 1, 4, 6, 0, 3)
+    cells = ((1, 0, 2), (2, 0, 1), (2, 1, 1), (3, 0, 1), (3, 1, 1), (4, 0, 1), (4, 1, 1))
+    for index, (row, col, span) in zip(tile_apps, cells):
+        name, icon, args = APPS[index]
+        button = dark_button(tiles, name, lambda args=args: open_app(*args), icon=icon,
+                             bg={7: "#0064b1", 2: "#005a9e"}.get(index, "#2b2b2b"),
+                             width=116, height=58, wraplength=105, justify="left")
+        button.grid(row=row, column=col, columnspan=span, sticky="ew", padx=2, pady=2)
     filter_apps()
-
-    ttk.Separator(shell).pack(fill="x", pady=(1, 12))
-    footer = ttk.Frame(shell, style="Shell.TFrame")
-    footer.pack(fill="x")
-    ttk.Button(footer, text="Kömək", command=lambda: open_app("relife-help")).pack(side="left")
-
-    def power():
-        open_app("relife-power-menu")
-
-    ttk.Button(footer, text="Kompüteri söndür", command=power).pack(side="right")
-    root.bind("<Alt-p>", lambda event: power())
-    place(root, x=12, bottom=True)
+    if root.winfo_screenwidth() < 620 or root.winfo_screenheight() < 450:
+        tiles.pack_forget()
+    place(root, x=0, bottom=True)
     search.focus_set()
-    root.bind("<FocusOut>", lambda event: root.after_idle(
-        lambda: root.destroy() if root.focus_displayof() is None else None))
     root.mainloop()
 
 
@@ -216,59 +279,170 @@ def switch(direction):
     root.mainloop()
 
 
+def nm_fields(line):
+    fields, field, escaped = [], [], False
+    for char in line:
+        if escaped:
+            field.append(char)
+            escaped = False
+        elif char == "\\":
+            escaped = True
+        elif char == ":":
+            fields.append("".join(field))
+            field.clear()
+        else:
+            field.append(char)
+    return fields + ["".join(field)]
+
+
+def nmcli(*args, timeout=5):
+    return subprocess.run(["nmcli", *args], capture_output=True, text=True, errors="replace",
+                          env={**os.environ, "LC_ALL": "C"}, timeout=timeout, check=True).stdout.strip()
+
+
 def network():
     root = panel("RelifeNetwork", "Şəbəkə")
-    ttk.Label(root, text="Şəbəkə", style="Header.TLabel").pack(fill="x")
-    body = ttk.Frame(root, padding=(22, 16))
-    body.pack(fill="both")
+    root.wm_attributes("-type", "dialog")
+    root.attributes("-topmost", True)
+    root.configure(bg="#1f1f1f", highlightbackground=EDGE, highlightthickness=1)
+    body = tk.Frame(root, bg="#1f1f1f", padx=14, pady=13)
+    body.pack(fill="both", expand=True)
+    dark_label(body, "Şəbəkə", bg="#1f1f1f", size=17, bold=True).pack(fill="x")
+    connected = tk.StringVar(value="Şəbəkə yoxlanılır…")
+    dark_label(body, variable=connected, bg=CARD, padx=10, pady=8, wraplength=310).pack(fill="x", pady=8)
+    entries = tk.Listbox(body, height=6, width=32, bg=CARD, fg=WHITE,
+                         borderwidth=0, highlightthickness=1, highlightbackground=EDGE,
+                         selectbackground="#005a9e", exportselection=False)
+    entries.pack(fill="x", pady=(0, 8))
     status = tk.StringVar()
-    card = ttk.Frame(body, padding=(14, 11), style="Practice.TFrame")
-    card.pack(fill="x", pady=(0, 13))
-    ttk.Label(card, textvariable=status, width=42, wraplength=334, style="Practice.TLabel").pack(anchor="w")
-    box = ttk.Frame(body)
-    box.pack(fill="x")
+    dark_label(body, variable=status, bg="#1f1f1f", fg=SOFT, wraplength=310).pack(fill="x")
+    rows = []
+    results = queue.Queue()
+    busy = False
 
-    def refresh():
+    def snapshot():
+        devices = [nm_fields(line) for line in nmcli(
+            "-t", "-f", "DEVICE,TYPE,STATE,CONNECTION", "device", "status").splitlines()]
+        adapters = [item for item in devices if len(item) == 4 and item[1] in ("wifi", "ethernet")]
+        current = [item for item in adapters if item[2] == "connected"]
+        summary = "Qoşulu şəbəkə yoxdur"
+        if current:
+            device, kind, _, name = current[0]
+            details = nmcli("-g", "IP4.ADDRESS,IP4.GATEWAY", "device", "show", device).splitlines()
+            summary = f"{name or device} · {'Wi-Fi' if kind == 'wifi' else 'Kabel'}"
+            if details and details[0]:
+                summary += f"\nIP  {details[0]}"
+            if len(details) > 1 and details[1]:
+                summary += f"\nKeçid  {details[1]}"
+        visible = [(name or dev, dev, state, "ethernet") for dev, kind, state, name in adapters if kind == "ethernet"]
+        if any(kind == "wifi" for _, kind, _, _ in adapters):
+            scan = nmcli("-t", "-f", "SSID,SIGNAL,SECURITY,IN-USE", "device", "wifi", "list", "--rescan", "no")
+            names = set()
+            for line in scan.splitlines():
+                item = nm_fields(line)
+                if len(item) == 4 and item[0] and item[0] not in names:
+                    name, level, security, used = item
+                    names.add(name)
+                    visible.append((f"{name}  {level}%", name, "connected" if used == "*" else security, "wifi"))
+        return summary, visible
+
+    def work(args):
         try:
-            env = {**os.environ, "LC_ALL": "C"}
-            result = subprocess.run(["nmcli", "-t", "-f", "TYPE,STATE", "device", "status"],
-                                    capture_output=True, text=True, env=env, timeout=4)
-        except (OSError, subprocess.TimeoutExpired):
-            status.set("Şəbəkə xidməti cavab vermədi.")
+            if args:
+                nmcli("--wait", "12", *args, timeout=14)
+            results.put((snapshot(), ""))
+        except (OSError, subprocess.SubprocessError):
+            results.put((None, "Əməliyyat alınmadı. Şəbəkə seçimini açıb yenidən yoxla."))
+
+    def collect():
+        nonlocal busy
+        try:
+            result, message = results.get_nowait()
+        except queue.Empty:
+            root.after(100, collect)
             return
-        devices = [line.split(":", 1) for line in result.stdout.splitlines() if ":" in line]
-        adapters = [state for kind, state in devices if kind in ("wifi", "ethernet")]
-        if result.returncode:
-            text = "Şəbəkə xidmətinə qoşulmaq mümkün olmadı."
-        elif any(state.startswith("connected") for state in adapters):
-            text = "Şəbəkəyə qoşulub. İnternet açılmırsa, giriş səhifəsini yoxla."
-        elif any(kind == "wifi" and state != "unavailable" for kind, state in devices):
-            text = "Wi-Fi şəbəkəsi seç və tələb olunarsa parolu daxil et."
+        busy = False
+        status.set(message)
+        if result:
+            summary, visible = result
+            connected.set(summary)
+            rows[:] = visible
+            entries.delete(0, "end")
+            for name, _, state, kind in rows:
+                entries.insert("end", f"{'●' if state == 'connected' else '○'}  {name}")
+
+    def refresh(*args):
+        nonlocal busy
+        if busy:
+            return
+        busy = True
+        status.set("Yoxlanılır…")
+        threading.Thread(target=work, args=(args,), daemon=True).start()
+        root.after(100, collect)
+
+    def advanced():
+        launch("xterm", "-T", "Şəbəkəyə qoşul", "-e", "nmtui", "connect")
+
+    def join():
+        selection = entries.curselection()
+        if not selection:
+            advanced()
+            return
+        _, name, state, kind = rows[selection[0]]
+        if kind == "ethernet":
+            refresh("device", "disconnect" if state == "connected" else "connect", name)
+        elif state == "connected":
+            refresh("connection", "down", "id", name)
+        elif state in ("", "--"):
+            refresh("device", "wifi", "connect", name)
         else:
-            text = "Aktiv Wi-Fi görünmür. Wi-Fi düyməsini və ya şəbəkə kabelini yoxla."
-        status.set(text)
+            advanced()
 
-    ttk.Button(box, text="Şəbəkə seç", style="Primary.TButton",
-               command=lambda: launch("xterm", "-T", "Wi-Fi və kabel", "-e", "nmtui", "connect")).pack(
-                   side="left", padx=(0, 6))
-    def enable_wifi():
-        try:
-            result = command("nmcli", "radio", "wifi", "on")
-            if result.returncode == 0:
-                refresh()
-                return
-        except (OSError, subprocess.TimeoutExpired):
-            pass
-        status.set("Wi-Fi açıla bilmədi. Kompüterdəki Wi-Fi düyməsini yoxla.")
-
-    ttk.Button(box, text="Wi-Fi aç", command=enable_wifi).pack(side="left", padx=(0, 6))
-    ttk.Button(box, text="Yenilə", command=refresh).pack(side="left")
-    ttk.Button(body, text="Şəbəkənin giriş səhifəsini aç",
-               command=lambda: launch("relife-firefox", "http://detectportal.firefox.com/canonical.html")).pack(
-                   anchor="w", pady=(10, 0))
-    refresh()
+    row = tk.Frame(body, bg="#1f1f1f")
+    row.pack(fill="x", pady=(7, 5))
+    dark_button(row, "Qoşul / Ayır", join, bg="#005a9e", padx=8, pady=5).pack(side="left")
+    dark_button(row, "Wi-Fi aç", lambda: refresh("radio", "wifi", "on"), padx=6, pady=5).pack(side="left", padx=4)
+    dark_button(row, "Yenilə", refresh, padx=6, pady=5).pack(side="left")
+    dark_button(body, "Şəbəkə seçimi", advanced, anchor="w", pady=4).pack(fill="x")
+    dark_button(body, "Giriş səhifəsini aç",
+                lambda: launch("relife-firefox", "http://detectportal.firefox.com/canonical.html"),
+                anchor="w", pady=4).pack(fill="x", pady=(4, 0))
     root.update_idletasks()
-    place(root, x=root.winfo_screenwidth() - root.winfo_reqwidth() - 12, bottom=True)
+    place(root, x=root.winfo_screenwidth() - root.winfo_reqwidth(), bottom=True)
+    refresh()
+    root.mainloop()
+
+
+def calendar():
+    root = panel("RelifeCalendar", "Təqvim")
+    root.wm_attributes("-type", "dialog")
+    root.attributes("-topmost", True)
+    body = tk.Frame(root, bg=DARK, padx=14, pady=12)
+    body.pack(fill="both")
+    today = date.today()
+    months = ("Yanvar", "Fevral", "Mart", "Aprel", "May", "İyun",
+              "İyul", "Avqust", "Sentyabr", "Oktyabr", "Noyabr", "Dekabr")
+    dark_label(body, f"{months[today.month - 1]} {today.year}", size=15, bold=True).grid(
+        row=0, column=0, columnspan=7, sticky="ew", pady=(0, 9))
+    for col, name in enumerate(("Be", "Ça", "Çə", "Ca", "Cü", "Şə", "Ba")):
+        dark_label(body, name, fg=SOFT, width=4).grid(row=1, column=col)
+    for row, week in enumerate(dates.monthcalendar(today.year, today.month), start=2):
+        for col, number in enumerate(week):
+            dark_label(body, str(number) if number else "", width=4, pady=5,
+                       bg="#005a9e" if number == today.day else DARK).grid(row=row, column=col)
+    root.update_idletasks()
+    place(root, x=root.winfo_screenwidth() - root.winfo_reqwidth(), bottom=True)
+    root.mainloop()
+
+
+def system_info():
+    root = panel("RelifeSystem", "Sistem məlumatı")
+    ttk.Label(root, text="ReLife RAM", style="Header.TLabel").pack(fill="x")
+    version = os.uname()
+    memory = command("free", "-m").stdout
+    ttk.Label(root, text=f"{version.sysname} {version.release} · {version.machine}\n\n{memory}",
+              padding=20, font=("DejaVu Sans Mono", 9)).pack(fill="x")
+    place(root)
     root.mainloop()
 
 
@@ -280,6 +454,10 @@ def main():
         switch(sys.argv[2] if len(sys.argv) > 2 else None)
     elif action == "network":
         network()
+    elif action == "calendar":
+        calendar()
+    elif action == "system":
+        system_info()
 
 
 if __name__ == "__main__":

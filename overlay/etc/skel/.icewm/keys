@@ -6,3 +6,4 @@ key "Super+b" relife-firefox
 key "XF86AudioRaiseVolume" relife-volume up
 key "XF86AudioLowerVolume" relife-volume down
 key "XF86AudioMute" relife-volume mute
+key "Alt+Tab" relife-desktop switch right

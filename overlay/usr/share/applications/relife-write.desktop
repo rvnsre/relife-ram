@@ -2,5 +2,5 @@
 Type=Application
 Name=Mətn yaz
 Exec=mousepad
-Icon=/usr/share/icons/relife/write.xpm
+Icon=/usr/share/icons/relife/write.svg
 Terminal=false

@@ -3,6 +3,6 @@ Type=Application
 Name=Dərs oxu
 Name[en]=Education Center
 Exec=relife-education
-Icon=/usr/share/icons/relife/education.xpm
+Icon=/usr/share/icons/relife/education.svg
 Categories=Education;
 Terminal=false

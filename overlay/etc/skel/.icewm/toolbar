@@ -1,6 +1,9 @@
-prog "Başla" /usr/share/icons/relife/start.xpm relife-desktop start
-prog "Təhsil mərkəzi" /usr/share/icons/relife/education.xpm relife-education
-prog "İnternet" /usr/share/icons/relife/internet.xpm relife-firefox
-prog "Fayllar" /usr/share/icons/relife/files.xpm pcmanfm
-prog "Səs" /usr/share/icons/relife/sound.xpm relife-sound
-prog "Şəbəkə" /usr/share/icons/relife/network.xpm relife-desktop network
+prog "Başla" /usr/share/icons/relife/start.svg relife-desktop start
+prog "Axtar" /usr/share/icons/relife/search.svg relife-desktop start
+prog "Açıq pəncərələr" /usr/share/icons/relife/windows.svg relife-desktop switch
+prog "Təhsil mərkəzi" /usr/share/icons/relife/education.svg relife-education
+prog "İnternet" /usr/share/icons/relife/internet.svg relife-firefox
+prog "Fayllar" /usr/share/icons/relife/files.svg pcmanfm
+prog "Səs" /usr/share/icons/relife/sound.svg relife-sound
+prog "Şəbəkə" /usr/share/icons/relife/network.svg relife-desktop network
+prog "Mətn yaz" /usr/share/icons/relife/write.svg mousepad

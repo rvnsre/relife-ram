@@ -1,6 +1,6 @@
 #!/bin/sh
 if command -v xsetroot >/dev/null; then
-  xsetroot -solid '#403566'
+  xsetroot -solid '#111c3c'
 fi
 pcmanfm --desktop --profile ReLife >/tmp/relife-desktop.log 2>&1 &
 if command -v pulseaudio >/dev/null; then

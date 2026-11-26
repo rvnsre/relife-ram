@@ -1,5 +1,6 @@
 [Desktop Entry]
-Type=Link
+Type=Application
 Name=İstifadə qaydası
-Icon=/usr/share/icons/relife/help.xpm
-URL=/usr/share/applications/relife-help.desktop
+Exec=relife-help
+Icon=/usr/share/icons/relife/help.svg
+Terminal=false

@@ -2,5 +2,5 @@
 Type=Application
 Name=İstifadə qaydası
 Exec=relife-help
-Icon=/usr/share/icons/relife/help.xpm
+Icon=/usr/share/icons/relife/help.svg
 Terminal=false

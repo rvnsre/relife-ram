@@ -2,5 +2,5 @@
 Type=Application
 Name=Fayllarım
 Exec=pcmanfm
-Icon=/usr/share/icons/relife/files.xpm
+Icon=/usr/share/icons/relife/files.svg
 Terminal=false

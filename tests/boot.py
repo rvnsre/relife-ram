@@ -42,6 +42,7 @@ else
   cat /home/student/.relife-gestures.log
 fi
 pgrep -a icewm
+free -m
 cat /proc/meminfo
 cat /proc/swaps
 findmnt /run/live/medium
@@ -71,7 +72,7 @@ else
   ip route
 fi
 as_student() { runuser -u student -- env HOME=/home/student DISPLAY=:0 XAUTHORITY=/home/student/.Xauthority "$@"; }
-as_student pcmanfm --profile ReLife /home/student/Desktop/help.desktop >/tmp/relife-education.log 2>&1 &
+as_student pcmanfm --profile ReLife /home/student/Desktop/education.desktop >/tmp/relife-education.log 2>&1 &
 for n in $(seq 1 20); do
   window=$(as_student xdotool search --onlyvisible --name '^ReLife.*T' | head -1)
   if [ -n "$window" ]; then
@@ -85,10 +86,16 @@ echo RELIFE_EDUCATION_END
 sleep 4
 as_student pcmanfm --profile ReLife /home/student >/tmp/relife-files.log 2>&1 &
 sleep 3
-echo RELIFE_FILES_END
-sleep 4
 files_window=$(as_student xdotool search --onlyvisible --name '^student$' | head -1)
-[ -z "$files_window" ] || as_student xdotool windowactivate --sync "$files_window"
+if [ -n "$files_window" ] && [ -n "$window" ]; then
+  desktop_width=$(as_student xdotool getdisplaygeometry | awk '{print $1}')
+  as_student xdotool windowsize "$window" "$((desktop_width * 56 / 100))" 620 windowmove "$window" 8 50
+  as_student xdotool windowsize "$files_window" "$((desktop_width * 42 / 100))" 470 windowmove "$files_window" "$((desktop_width * 57 / 100))" 135
+  as_student xdotool windowactivate --sync "$files_window"
+  sleep 2
+  echo RELIFE_FILES_END
+  sleep 3
+fi
 before_switch=$(as_student xdotool getactivewindow)
 as_student relife-desktop switch right >/tmp/relife-switcher.log 2>&1 &
 for n in $(seq 1 10); do
@@ -143,7 +150,7 @@ open_start() {
 open_start
 if [ -n "$start_window" ]; then
   as_student xdotool windowactivate --sync "$start_window"
-  sleep 2
+  sleep 4
   echo RELIFE_START_END
   sleep 2
   # "b" matches Şəbəkə with a keyboard layout independent ASCII keystroke.
@@ -155,8 +162,9 @@ if [ -n "$start_window" ]; then
     sleep 1
   done
   if [ -n "$network_window" ]; then
+    sleep 3
     echo RELIFE_START_SEARCH_OK
-    sleep 2
+    sleep 3
     as_student xdotool windowactivate --sync "$network_window" key Escape
   fi
   start_window=$(as_student xdotool search --onlyvisible --class '^RelifeStart$' | head -1)

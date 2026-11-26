@@ -1,5 +1,6 @@
 [Desktop Entry]
-Type=Link
+Type=Application
 Name=Fayllarım
-Icon=/usr/share/icons/relife/files.xpm
-URL=/usr/share/applications/relife-files.desktop
+Exec=pcmanfm
+Icon=/usr/share/icons/relife/files.svg
+Terminal=false

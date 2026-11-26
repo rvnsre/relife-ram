@@ -22,23 +22,41 @@ class Education:
         root.minsize(610, 480)
         appearance.configure(root)
         ttk.Label(root, text="Təhsil mərkəzi", style="Header.TLabel").pack(fill="x")
-        tabs = ttk.Notebook(root)
-        tabs.pack(fill="both", expand=True, padx=12, pady=12)
-        tabs.enable_traversal()
+        shell = ttk.Frame(root, style="Shell.TFrame")
+        shell.pack(fill="both", expand=True, padx=12, pady=(0, 12))
+        navigation = ttk.Frame(shell, style="Shell.TFrame", padding=(0, 0, 10, 0))
+        navigation.pack(side="left", fill="y")
+        content = ttk.Frame(shell)
+        content.pack(side="left", fill="both", expand=True)
+        content.rowconfigure(0, weight=1)
+        content.columnconfigure(0, weight=1)
         root.bind("<Control-plus>", lambda event: self.set_text_size(1))
         root.bind("<Control-minus>", lambda event: self.set_text_size(-1))
-        self.tabs = tabs
+        self.navigation = {}
+        self.page = tk.StringVar()
+        style = ttk.Style(root)
+        style.configure("Navigation.TRadiobutton", background=appearance.BACKGROUND, padding=(9, 6))
+        style.map("Navigation.TRadiobutton", background=[("selected", appearance.TINT), ("active", "#e5e5e5")])
         for label, populate in (
             ("Kitabxana", self.library), ("Təkrar", self.flashcards), ("Müəllim", self.teacher),
             ("Elm", self.science), ("Plan", self.planner), ("Qeydlər", self.notes), ("Fokus", self.focus),
             ("Kömək", self.help), ("Onlayn AI", self.ai),
         ):
-            pane = ttk.Frame(tabs, padding=12)
-            tabs.add(pane, text=label)
+            pane = ttk.Frame(content, padding=12)
+            pane.grid(row=0, column=0, sticky="nsew")
+            self.navigation[label] = pane
+            ttk.Radiobutton(navigation, text=label, value=label, variable=self.page,
+                            style="Navigation.TRadiobutton",
+                            command=lambda label=label: self.open_page(label)).pack(fill="x", pady=2)
             populate(pane)
+        self.open_page("Kitabxana")
         ttk.Label(root, text="RAM sessiyası bitməzdən əvvəl işinizi xarici yaddaşa ixrac edin.", style="Caption.TLabel").pack(
             anchor="w", padx=14, pady=(0, 9)
         )
+
+    def open_page(self, name):
+        self.page.set(name)
+        self.navigation[name].tkraise()
 
     def set_text_size(self, delta):
         for name in ("TkDefaultFont", "TkTextFont", "TkHeadingFont"):
@@ -348,14 +366,16 @@ class Education:
                      ("Fasilə", lambda: begin(rest, "Fasilə")), ("Dayandır", stop))
 
     def help(self, pane):
-        self.help_pane = pane
-        text = self.output(pane)
-        self.show(text, "Başla menyusu vasitəsilə proqramları aç. Super+E fayl menecerini açır. "
-                  "Alt+Tab açıq pəncərələr arasında keçir. Ctrl+ və Ctrl− təhsil mərkəzinin mətn ölçüsünü dəyişir.\n\n"
-                  "Kitabxana və laboratoriya internetsiz işləyir. Bir dərsi oxu, sualı cavablandır "
-                  "və səhv etdiyin mövzunu Təkrar bölməsində karta çevir.\n\n"
-                  "İşini bitirəndə faylın saxlandığı yeri yoxla. RAM sessiyasındakı fayllar "
-                  "yenidən başlatdıqda silinir. Kompüteri Başla → Kompüteri söndür vasitəsilə bağla.")
+        for title, description in (
+            ("Qısayollar", "Super+E faylları açır. Alt+Tab açıq tətbiqləri göstərir. Ctrl+ və Ctrl− mətnin ölçüsünü dəyişir."),
+            ("İnternetə qoşul", "Şəbəkə panelini aç və bağlantını seç. Giriş tələb edən şəbəkələr üçün Giriş səhifəsini aç düyməsini seç."),
+            ("Dərs oxu", "Kitabxanada mövzu axtar və sualı cavablandır. Çətin mövzunu Təkrar bölməsində karta çevir."),
+            ("İşini saxla", "RAM sessiyasındakı fayllar sistem sönəndə silinir. Vacib işini xarici yaddaşa ixrac et."),
+        ):
+            card = ttk.Frame(pane, padding=(12, 8), style="Practice.TFrame")
+            card.pack(fill="x", pady=(0, 8))
+            ttk.Label(card, text=title, style="PracticeHeading.TLabel").pack(anchor="w")
+            ttk.Label(card, text=description, wraplength=430, style="Practice.TLabel").pack(anchor="w", pady=(3, 0))
 
     def ai(self, pane):
         if not shutil.which("firefox-esr"):
@@ -388,5 +408,5 @@ if __name__ == "__main__":
         root.iconphoto(True, icon)
     app = Education(root)
     if args.help_page:
-        app.tabs.select(app.help_pane)
+        app.open_page("Kömək")
     root.mainloop()
