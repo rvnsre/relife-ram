@@ -1,0 +1,74 @@
+name: Build ReLife Education XFCE ISO
+on:
+  push:
+    branches: [education-xfce-iso]
+    paths: ['education-xfce/**', '.github/workflows/education-xfce-iso.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    container:
+      image: debian:13
+      options: --privileged
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Debian live image build tools
+        run: |
+          apt-get update
+          apt-get install -y live-build debootstrap xorriso squashfs-tools isolinux syslinux-common grub-pc-bin grub-efi-amd64-bin grub-common mtools dosfstools fdisk unzip python3 python3-pil ca-certificates
+      - name: Assemble source and build ISO
+        shell: bash
+        run: |
+          set -euo pipefail
+          unzip -q education-xfce/source.zip -d /tmp/relife-education-source
+          cd /tmp/relife-education-source
+          python3 tools/art.py overlay
+          python3 tools/config.py
+          bash build-live.sh /tmp/relife-xfce-build
+          mkdir -p "$GITHUB_WORKSPACE/output"
+          cp /tmp/relife-xfce-build/*.iso "$GITHUB_WORKSPACE/output/ReLife-Education-XFCE-x86_64.iso"
+      - name: Verify the desktop and boot image layout
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd output
+          iso=ReLife-Education-XFCE-x86_64.iso
+          xorriso -indev "$iso" -report_el_torito plain 2>&1 | tee boot-report.txt
+          grep -q BIOS boot-report.txt
+          grep -q UEFI boot-report.txt
+          xorriso -osirrox on -indev "$iso" -extract /live/filesystem.squashfs /tmp/relife-rootfs.squashfs
+          for path in usr/bin/xfce4-session usr/bin/firefox-esr usr/local/bin/relife-education-ui usr/share/backgrounds/relife-education/ufuq-light.jpg; do
+            unsquashfs -ll /tmp/relife-rootfs.squashfs "$path" | grep -F "squashfs-root/$path"
+          done
+          sha256sum "$iso" > SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        with:
+          name: relife-education-xfce-iso
+          path: output/*
+          compression-level: 0
+          if-no-files-found: error
+  release:
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: relife-education-xfce-iso
+          path: output
+      - name: Publish verified ISO and checksum
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          (cd output && sha256sum -c SHA256SUMS)
+          tag=education-xfce-preview.1
+          if ! gh release view -R "$GITHUB_REPOSITORY" "$tag" >/dev/null 2>&1; then
+            gh release create -R "$GITHUB_REPOSITORY" "$tag" --target "$GITHUB_SHA" --title "ReLife Education XFCE Preview 1" --notes "Debian 13 / XFCE live preview with the core education packages. ISO image structure and BIOS/UEFI boot records verified. Physical hardware performance is pending." --draft --prerelease
+          fi
+          gh release upload -R "$GITHUB_REPOSITORY" "$tag" output/*
+          gh release edit -R "$GITHUB_REPOSITORY" "$tag" --draft=false
